@@ -20,8 +20,17 @@ frontend:
         - env | grep -e FIRECRAWL_API_KEY >> .env.production
         - env | grep -e EXA_API_KEY >> .env.production
         - env | grep -e DDB_TABLE >> .env.production
+        # Debug: show what will be available to SSR (mask secrets)
+        - echo "---- .env.production (masked) ----"
+        - sed -E 's/(SECRET|PASS|KEY|TOKEN)=.*/\1=***MASKED***/' .env.production | sort
+        - echo "---- NEXT_PUBLIC_* from build env ----"
+        - env | grep -e NEXT_PUBLIC_ | sort
         - npm run build
   artifacts:
     baseDirectory: .next
     files:
       - '**/*'
+  cache:
+    paths:
+      - node_modules/**/*
+      - .next/cache/**/*
