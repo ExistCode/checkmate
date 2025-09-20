@@ -95,6 +95,23 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const sanitizedUrl = sanitizeUrl(rawUrl);
     const platform = detectPlatform(sanitizedUrl);
+    logger.debug("Env snapshot", {
+      requestId,
+      operation: "env-check",
+      metadata: {
+        APP_REGION: Boolean(process.env.APP_REGION),
+        COGNITO_REGION: Boolean(process.env.COGNITO_REGION),
+        BEDROCK_MODEL_ID: Boolean(process.env.BEDROCK_MODEL_ID),
+        S3_BUCKET: Boolean(process.env.S3_BUCKET),
+        COGNITO_USER_POOL_ID: Boolean(process.env.COGNITO_USER_POOL_ID),
+        COGNITO_CLIENT_ID: Boolean(
+          process.env.COGNITO_CLIENT_ID || process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID
+        ),
+        COGNITO_DOMAIN: Boolean(
+          process.env.COGNITO_DOMAIN || process.env.NEXT_PUBLIC_COGNITO_DOMAIN
+        ),
+      },
+    });
 
     logger.info("Platform detected and URL sanitized", {
       requestId,
