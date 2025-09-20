@@ -180,7 +180,12 @@ const getBiasIcon = (biasName: string) => {
 
 const OriginNode = ({ data }: { data: NodeData }) => (
   <div className="px-5 py-4 bg-blue-50 border-2 border-blue-200 rounded-xl shadow-lg min-w-[220px] max-w-[320px]">
-    <Handle type="target" position={Position.Top} />
+    {/* All-direction handles */}
+    <Handle type="target" position={Position.Top} id="top" />
+    <Handle type="source" position={Position.Bottom} id="bottom" />
+    <Handle type="target" position={Position.Left} id="left" />
+    <Handle type="source" position={Position.Right} id="right" />
+    
     <div className="flex items-center gap-3 mb-3">
       <div className="flex-shrink-0">
         {getPlatformIcon(data.label)}
@@ -188,13 +193,17 @@ const OriginNode = ({ data }: { data: NodeData }) => (
       <div className="font-semibold text-blue-900 text-sm">Original Source</div>
     </div>
     <div className="text-sm text-blue-800 leading-relaxed">{data.label}</div>
-    <Handle type="source" position={Position.Bottom} />
   </div>
 );
 
 const PropagationNode = ({ data }: { data: NodeData }) => (
   <div className="px-5 py-4 bg-orange-50 border-2 border-orange-200 rounded-xl shadow-lg min-w-[200px] max-w-[280px]">
-    <Handle type="target" position={Position.Top} />
+    {/* All-direction handles */}
+    <Handle type="target" position={Position.Top} id="top" />
+    <Handle type="source" position={Position.Bottom} id="bottom" />
+    <Handle type="target" position={Position.Left} id="left" />
+    <Handle type="source" position={Position.Right} id="right" />
+    
     <div className="flex items-center gap-3 mb-3">
       <div className="flex-shrink-0">
         {getPlatformIcon(data.label)}
@@ -202,7 +211,6 @@ const PropagationNode = ({ data }: { data: NodeData }) => (
       <div className="font-semibold text-orange-900 text-sm">Propagation</div>
     </div>
     <div className="text-sm text-orange-800 leading-relaxed">{data.label}</div>
-    <Handle type="source" position={Position.Bottom} />
   </div>
 );
 
@@ -227,7 +235,12 @@ const ClaimNode = ({ data }: { data: NodeData }) => {
 
   return (
     <div className={`px-6 py-5 border-2 rounded-xl shadow-xl min-w-[280px] max-w-[400px] ${verdictColors[data.verdict as keyof typeof verdictColors] || verdictColors.unverified}`}>
-      <Handle type="target" position={Position.Top} />
+      {/* All-direction handles for the central claim node */}
+      <Handle type="target" position={Position.Top} id="top" />
+      <Handle type="source" position={Position.Bottom} id="bottom" />
+      <Handle type="target" position={Position.Left} id="left" />
+      <Handle type="source" position={Position.Right} id="right" />
+      
       <div className="flex items-center gap-3 font-semibold mb-3">
         <Icon className="h-5 w-5" />
         <span className="text-base">Current Claim</span>
@@ -239,14 +252,18 @@ const ClaimNode = ({ data }: { data: NodeData }) => {
         </Badge>
         <Shield className="h-3 w-3 opacity-60" />
       </div>
-      <Handle type="source" position={Position.Bottom} />
     </div>
   );
 };
 
 const SourceNode = ({ data }: { data: NodeData }) => (
   <div className="px-5 py-4 bg-emerald-50 border-2 border-emerald-200 rounded-xl shadow-lg min-w-[220px] max-w-[320px]">
-    <Handle type="target" position={Position.Top} />
+    {/* All-direction handles */}
+    <Handle type="target" position={Position.Top} id="top" />
+    <Handle type="source" position={Position.Bottom} id="bottom" />
+    <Handle type="target" position={Position.Left} id="left" />
+    <Handle type="source" position={Position.Right} id="right" />
+    
     <div className="flex items-center gap-3 mb-3">
       <div className="flex-shrink-0">
         {getPlatformIcon(data.label)}
@@ -274,7 +291,12 @@ const SourceNode = ({ data }: { data: NodeData }) => (
 
 const BeliefDriverNode = ({ data }: { data: NodeData }) => (
   <div className="px-5 py-4 bg-violet-50 border-2 border-violet-200 rounded-xl shadow-lg min-w-[220px] max-w-[320px]">
-    <Handle type="target" position={Position.Left} />
+    {/* All-direction handles */}
+    <Handle type="target" position={Position.Top} id="top" />
+    <Handle type="source" position={Position.Bottom} id="bottom" />
+    <Handle type="target" position={Position.Left} id="left" />
+    <Handle type="source" position={Position.Right} id="right" />
+    
     <div className="flex items-center gap-3 mb-3">
       <div className="flex-shrink-0">
         {getBiasIcon(data.name || '')}
@@ -306,12 +328,60 @@ export function OriginTracingDiagram({
     const edges: Edge[] = [];
     let nodeId = 0;
 
+    // Define layout constants with completely separate sections and guaranteed spacing
+    const LAYOUT = {
+      // Main claim at center - locked position
+      center: { x: 1000, y: 600 },
+      
+      // Origin section (top center) - above claim
+      origin: { x: 1000, y: 150 },
+      
+      // Timeline section (left side) - well separated from center
+      timeline: { 
+        startX: 100, 
+        y: 300, 
+        spacing: 320,
+        maxPerRow: 3,
+        rowSpacing: 150
+      },
+      
+      // Propagation section (right side) - well separated from center
+      propagation: { 
+        startX: 1500, 
+        y: 300, 
+        spacing: 320,
+        maxPerRow: 3,
+        rowSpacing: 150
+      },
+      
+      // Sources section (bottom center) - below claim with good spacing
+      sources: { 
+        startX: 600, 
+        y: 950, 
+        spacing: 380,
+        maxPerRow: 4,
+        rowSpacing: 150
+      },
+      
+      // Belief drivers section (far right) - isolated from other sections
+      beliefs: { 
+        x: 2000, 
+        startY: 400, 
+        spacing: 180
+      },
+      
+      // Node dimensions for overlap prevention
+      nodeWidth: 300,
+      nodeHeight: 140,
+      minSpacing: 50 // Minimum gap between nodes
+    };
+
     // Create the central claim node
     const claimNodeId = `claim-${nodeId++}`;
     nodes.push({
       id: claimNodeId,
       type: 'claim',
-      position: { x: 500, y: 400 },
+      position: { x: LAYOUT.center.x, y: LAYOUT.center.y },
       data: { 
         label: content || 'Current Claim', 
         verdict 
@@ -324,14 +394,16 @@ export function OriginTracingDiagram({
       nodes.push({
         id: originNodeId,
         type: 'origin',
-        position: { x: 500, y: 50 },
+        position: { x: LAYOUT.origin.x, y: LAYOUT.origin.y },
         data: { label: originTracing.hypothesizedOrigin },
       });
 
       edges.push({
         id: `${originNodeId}-${claimNodeId}`,
         source: originNodeId,
+        sourceHandle: 'bottom',
         target: claimNodeId,
+        targetHandle: 'top',
         type: 'smoothstep',
         animated: true,
         markerEnd: { type: MarkerType.ArrowClosed },
@@ -340,42 +412,19 @@ export function OriginTracingDiagram({
       });
     }
 
-    // Add propagation path nodes with better spacing
-    if (originTracing?.propagationPaths) {
-      const pathCount = originTracing.propagationPaths.length;
-      const startX = 500 - (pathCount - 1) * 160; // Center the propagation nodes
-      
-      originTracing.propagationPaths.forEach((path, index) => {
-        const propNodeId = `prop-${nodeId++}`;
-        nodes.push({
-          id: propNodeId,
-          type: 'propagation',
-          position: { x: startX + index * 320, y: 225 },
-          data: { label: path },
-        });
-
-        edges.push({
-          id: `${propNodeId}-${claimNodeId}`,
-          source: propNodeId,
-          target: claimNodeId,
-          type: 'smoothstep',
-          markerEnd: { type: MarkerType.ArrowClosed },
-          style: { stroke: '#ff8800', strokeWidth: 2 },
-        });
-      });
-    }
-
-    // Add first seen dates as timeline nodes with better spacing
-    if (originTracing?.firstSeenDates) {
-      const dateCount = originTracing.firstSeenDates.length;
-      const startX = 500 - (dateCount - 1) * 120; // Center the timeline nodes
-      
+    // Add first seen dates as timeline nodes in left section
+    if (originTracing?.firstSeenDates && originTracing.firstSeenDates.length > 0) {
       originTracing.firstSeenDates.forEach((dateInfo, index) => {
         const dateNodeId = `date-${nodeId++}`;
+        const row = Math.floor(index / LAYOUT.timeline.maxPerRow);
+        const col = index % LAYOUT.timeline.maxPerRow;
+        const x = LAYOUT.timeline.startX + col * LAYOUT.timeline.spacing;
+        const y = LAYOUT.timeline.y + row * LAYOUT.timeline.rowSpacing;
+        
         nodes.push({
           id: dateNodeId,
           type: 'propagation',
-          position: { x: startX + index * 240, y: 140 },
+          position: { x, y },
           data: { 
             label: `${dateInfo.source}${dateInfo.date ? ` (${dateInfo.date})` : ''}` 
           },
@@ -384,7 +433,9 @@ export function OriginTracingDiagram({
         edges.push({
           id: `${dateNodeId}-${claimNodeId}`,
           source: dateNodeId,
+          sourceHandle: 'right',
           target: claimNodeId,
+          targetHandle: 'left',
           type: 'smoothstep',
           markerEnd: { type: MarkerType.ArrowClosed },
           style: { stroke: '#666', strokeDasharray: '5,5', strokeWidth: 1.5 },
@@ -393,17 +444,48 @@ export function OriginTracingDiagram({
       });
     }
 
-    // Add fact-check source nodes with improved layout
+    // Add propagation path nodes in right section
+    if (originTracing?.propagationPaths && originTracing.propagationPaths.length > 0) {
+      originTracing.propagationPaths.forEach((path, index) => {
+        const propNodeId = `prop-${nodeId++}`;
+        const row = Math.floor(index / LAYOUT.propagation.maxPerRow);
+        const col = index % LAYOUT.propagation.maxPerRow;
+        const x = LAYOUT.propagation.startX + col * LAYOUT.propagation.spacing;
+        const y = LAYOUT.propagation.y + row * LAYOUT.propagation.rowSpacing;
+        
+        nodes.push({
+          id: propNodeId,
+          type: 'propagation',
+          position: { x, y },
+          data: { label: path },
+        });
+
+        edges.push({
+          id: `${propNodeId}-${claimNodeId}`,
+          source: propNodeId,
+          sourceHandle: 'left',
+          target: claimNodeId,
+          targetHandle: 'right',
+          type: 'smoothstep',
+          markerEnd: { type: MarkerType.ArrowClosed },
+          style: { stroke: '#ff8800', strokeWidth: 2 },
+        });
+      });
+    }
+
+    // Add fact-check source nodes in bottom section
     if (sources.length > 0) {
-      const sourceCount = sources.length;
-      const startX = 500 - (sourceCount - 1) * 200; // Center the source nodes
-      
       sources.forEach((source, index) => {
         const sourceNodeId = `source-${nodeId++}`;
+        const row = Math.floor(index / LAYOUT.sources.maxPerRow);
+        const col = index % LAYOUT.sources.maxPerRow;
+        const x = LAYOUT.sources.startX + col * LAYOUT.sources.spacing;
+        const y = LAYOUT.sources.y + row * LAYOUT.sources.rowSpacing;
+        
         nodes.push({
           id: sourceNodeId,
           type: 'source',
-          position: { x: startX + index * 400, y: 600 },
+          position: { x, y },
           data: { 
             label: source.title, 
             credibility: source.credibility,
@@ -414,7 +496,9 @@ export function OriginTracingDiagram({
         edges.push({
           id: `${claimNodeId}-${sourceNodeId}`,
           source: claimNodeId,
+          sourceHandle: 'bottom',
           target: sourceNodeId,
+          targetHandle: 'top',
           type: 'smoothstep',
           markerEnd: { type: MarkerType.ArrowClosed },
           label: 'fact-checked by',
@@ -423,15 +507,15 @@ export function OriginTracingDiagram({
       });
     }
 
-    // Add belief driver nodes with better positioning
+    // Add belief driver nodes in far right section
     beliefDrivers.forEach((driver, index) => {
       const driverNodeId = `belief-${nodeId++}`;
-      const yPosition = 320 + index * 160; // More spacing between belief drivers
+      const yPosition = LAYOUT.beliefs.startY + index * LAYOUT.beliefs.spacing;
       
       nodes.push({
         id: driverNodeId,
         type: 'beliefDriver',
-        position: { x: 1000, y: yPosition },
+        position: { x: LAYOUT.beliefs.x, y: yPosition },
         data: { 
           name: driver.name, 
           description: driver.description 
@@ -441,7 +525,9 @@ export function OriginTracingDiagram({
       edges.push({
         id: `${claimNodeId}-${driverNodeId}`,
         source: claimNodeId,
+        sourceHandle: 'right',
         target: driverNodeId,
+        targetHandle: 'left',
         type: 'smoothstep',
         markerEnd: { type: MarkerType.ArrowClosed },
         label: 'reinforced by',
@@ -464,7 +550,7 @@ export function OriginTracingDiagram({
   }
 
   return (
-    <Card className="w-full h-[700px] p-6 shadow-xl">
+    <Card className="w-full h-[1000px] p-6 shadow-xl">
       <div className="h-full">
         <div className="mb-6">
           <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
@@ -484,11 +570,12 @@ export function OriginTracingDiagram({
             onConnect={onConnect}
             nodeTypes={nodeTypes}
             fitView
-            fitViewOptions={{ padding: 0.15 }}
-            minZoom={0.3}
-            maxZoom={2}
+            fitViewOptions={{ padding: 0.1, includeHiddenNodes: false }}
+            minZoom={0.1}
+            maxZoom={1.0}
             attributionPosition="bottom-left"
-            defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
+            defaultViewport={{ x: 0, y: 0, zoom: 0.3 }}
+            proOptions={{ hideAttribution: false }}
           >
             <Controls showInteractive={false} />
             <Background gap={20} size={1} color="#f1f5f9" />
