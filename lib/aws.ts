@@ -8,7 +8,13 @@ import { TranscribeClient } from "@aws-sdk/client-transcribe";
  * Centralized AWS clients with shared region from config
  */
 
-const region = process.env.AWS_REGION;
+// Ensure core AWS SDK picks up region in environments that block AWS_* env names
+if (process.env.APP_REGION) {
+  if (!process.env.AWS_REGION) process.env.AWS_REGION = process.env.APP_REGION;
+  if (!process.env.AWS_DEFAULT_REGION)
+    process.env.AWS_DEFAULT_REGION = process.env.APP_REGION;
+}
+const region = process.env.APP_REGION;
 
 /**
  * DynamoDB Document client (marshalling on by default)

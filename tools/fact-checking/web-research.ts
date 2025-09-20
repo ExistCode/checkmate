@@ -61,7 +61,7 @@ interface ExaContentResult {
  * 5. Determining overall truthfulness and confidence
  *
  * @requires EXA_API_KEY environment variable
- * @requires AWS_REGION environment variable (for Bedrock)
+ * @requires APP_REGION environment variable (for Bedrock)
  *
  * @example
  * ```typescript
