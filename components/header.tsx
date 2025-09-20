@@ -122,7 +122,7 @@ export function Header() {
           <Button
             variant="default"
             size="sm"
-            className="w-full justify-start"
+            className=" justify-start"
             onClick={closeMenu}
           >
             {t.signIn}

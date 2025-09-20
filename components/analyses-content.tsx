@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useTikTokAnalysisById } from "@/lib/hooks/use-saved-analyses";
-import { Id } from "@/convex/_generated/dataModel";
 import {
   Card,
   CardContent,
@@ -76,7 +75,7 @@ const getStatusBadge = (status: string) => {
 export function AnalysisPage({
   analysisId,
 }: {
-  analysisId: Id<"tiktokAnalyses">;
+  analysisId: string;
 }) {
   const { t } = useLanguage();
   const analysis = useTikTokAnalysisById(analysisId);
@@ -157,7 +156,7 @@ export function AnalysisPage({
               )}
               <span className="flex items-center gap-1.5">
                 <Calendar className="h-4 w-4" />
-                {formatDate(analysis._creationTime)}
+                {formatDate((analysis as any).createdAt || (analysis as any)._creationTime)}
               </span>
             </CardDescription>
           </CardHeader>

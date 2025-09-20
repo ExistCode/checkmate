@@ -43,6 +43,7 @@ Notes
 - GSI6 (Analyses by Content Creator): `GSI6PK=CREATOR#<creatorId>#PLATFORM#<platform>`, `GSI6SK=<isoTime>#<analysisId>`.
 - GSI7 (All analyses by createdAt): `GSI7PK=ANALYSIS`, `GSI7SK=<isoTime>#<userId>#<analysisId>` (optional; used by admin listings).
 - GSI8 (Comments by User): `GSI8PK=USER#<userId>`, `GSI8SK=COMMENT#<isoTime>#<commentId>`.
+- GSI9 (Analysis by ID): `GSI9PK=ANALYSIS#<id>`, `GSI9SK=USER#<userId>#<isoTime>` → fetch/delete by id fast.
 
 Rationale → Convex indexes
 - users.by_clerk_id → GSI1
@@ -106,7 +107,9 @@ Rationale → Convex indexes
   "GSI6PK": "CREATOR#john#PLATFORM#tiktok",
   "GSI6SK": "2024-09-10T12:34:56.000Z#01JABCDE...",
   "GSI7PK": "ANALYSIS",
-  "GSI7SK": "2024-09-10T12:34:56.000Z#u_123#01JABCDE..."
+  "GSI7SK": "2024-09-10T12:34:56.000Z#u_123#01JABCDE...",
+  "GSI9PK": "ANALYSIS#01JABCDE...",
+  "GSI9SK": "USER#u_123#2024-09-10T12:34:56.000Z"
 }
 ```
 - COMMENT

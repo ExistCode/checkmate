@@ -1,4 +1,4 @@
-import { PutCommand, QueryCommand, GetCommand } from '@aws-sdk/lib-dynamodb';
+import { PutCommand, QueryCommand, GetCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
 import { ddbDoc } from '../aws';
 import type { AnalysisItem, CommentItem, CreatorItem, UserItem } from './types';
 import {
@@ -16,6 +16,7 @@ import {
   gsi6AnalysesByCreator,
   gsi7AnalysesByCreatedAt,
   gsi8CommentsByUser,
+  gsi9AnalysisById,
 } from './keys';
 
 const TABLE = process.env.DDB_TABLE as string;
@@ -60,6 +61,7 @@ export const buildAnalysisItem = (
     createdAt,
     ...data,
     ...gsi7AnalysesByCreatedAt(createdAt, userId, id),
+    ...gsi9AnalysisById(id, userId, createdAt),
   };
   if (data.requiresFactCheck) Object.assign(item, gsi4AnalysesRFC(createdAt, userId, id));
   const platform = data.metadata?.platform;
@@ -136,4 +138,82 @@ export const listCreatorsByPlatform = async (platform: string, limit = 20) => {
     Limit: limit,
   }));
   return res.Items ?? [];
+};
+
+export const getCreator = async (creatorId: string, platform: string) => {
+  const res = await ddbDoc.send(new GetCommand({
+    TableName: TABLE,
+    Key: { PK: pkCreator(creatorId, platform), SK: skCreatorProfile() },
+  }));
+  return res.Item ?? null;
+};
+
+export const listTopCreatorsByCredibility = async (platform: string, limit = 10) => {
+  const res = await ddbDoc.send(new QueryCommand({
+    TableName: TABLE,
+    IndexName: 'GSI3',
+    KeyConditionExpression: 'GSI3PK = :p',
+    ExpressionAttributeValues: { ':p': `PLATFORM#${platform}` },
+    ScanIndexForward: false,
+    Limit: limit,
+  }));
+  return res.Items ?? [];
+};
+
+export const listBottomCreatorsByCredibility = async (platform: string, limit = 10) => {
+  const res = await ddbDoc.send(new QueryCommand({
+    TableName: TABLE,
+    IndexName: 'GSI3',
+    KeyConditionExpression: 'GSI3PK = :p',
+    ExpressionAttributeValues: { ':p': `PLATFORM#${platform}` },
+    ScanIndexForward: true,
+    Limit: limit,
+  }));
+  return res.Items ?? [];
+};
+
+export const getAnalysisById = async (id: string) => {
+  const res = await ddbDoc.send(new QueryCommand({
+    TableName: TABLE,
+    IndexName: 'GSI9',
+    KeyConditionExpression: 'GSI9PK = :p',
+    ExpressionAttributeValues: { ':p': `ANALYSIS#${id}` },
+    Limit: 1,
+  }));
+  const pointer = res.Items?.[0];
+  if (!pointer) return null;
+  const [_, userKey, iso] = (pointer.GSI9SK as string).split('#');
+  const userId = userKey?.replace('USER', '').replace(':', '').replace('USER', '');
+  const full = await ddbDoc.send(new GetCommand({
+    TableName: TABLE,
+    Key: { PK: (pointer as any).PK, SK: (pointer as any).SK },
+  }));
+  return full.Item ?? null;
+};
+
+export const deleteAnalysisById = async (id: string) => {
+  const res = await ddbDoc.send(new QueryCommand({
+    TableName: TABLE,
+    IndexName: 'GSI9',
+    KeyConditionExpression: 'GSI9PK = :p',
+    ExpressionAttributeValues: { ':p': `ANALYSIS#${id}` },
+    Limit: 1,
+  }));
+  const item = res.Items?.[0];
+  if (!item) return false;
+  await ddbDoc.send(new DeleteCommand({ TableName: TABLE, Key: { PK: (item as any).PK, SK: (item as any).SK } }));
+  return true;
+};
+
+export const listAnalysesRequiringFactCheckByUser = async (userId: string, limit = 10) => {
+  const res = await ddbDoc.send(new QueryCommand({
+    TableName: TABLE,
+    IndexName: 'GSI4',
+    KeyConditionExpression: 'GSI4PK = :p',
+    ExpressionAttributeValues: { ':p': 'RFC' },
+    ScanIndexForward: false,
+    Limit: 200,
+  }));
+  const filtered = (res.Items ?? []).filter(i => (i as any).userId === userId).slice(0, limit);
+  return filtered;
 };

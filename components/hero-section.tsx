@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { useTikTokAnalysis } from "@/lib/hooks/use-tiktok-analysis";
 import { useSaveTikTokAnalysisWithCredibility } from "@/lib/hooks/use-saved-analyses";
-import { useConvexAuth } from "convex/react";
+import { useAuth } from "@clerk/nextjs";
 import { toast } from "sonner";
 import { AnalysisRenderer } from "@/components/analysis-renderer";
 import { useLanguage } from "@/components/language-provider";
@@ -94,11 +94,27 @@ export function HeroSection({ initialUrl = "" }: HeroSectionProps) {
     };
   } | null>(null);
   const { analyzeTikTok, isLoading, result, reset } = useTikTokAnalysis();
-  const { isAuthenticated } = useConvexAuth();
+  const { isSignedIn } = useAuth();
   const saveTikTokAnalysisWithCredibility =
     useSaveTikTokAnalysisWithCredibility();
   const router = useRouter();
   const { t } = useLanguage();
+
+  // Curated quick-start sample links for fast testing in the UI
+  const sampleLinks: Array<{ label: string; url: string }> = [
+    {
+      label: "TikTok sample",
+      url: "https://www.tiktok.com/@scout2015/video/6718335390845095173",
+    },
+    {
+      label: "X (Twitter) sample",
+      url: "https://twitter.com/Interior/status/463440424141459456",
+    },
+    {
+      label: "TikTok sample 2",
+      url: "https://www.tiktok.com/@cookingwithshereen/video/722737769229",
+    },
+  ];
 
   useEffect(() => {
     setUrl(initialUrl);
@@ -142,6 +158,10 @@ export function HeroSection({ initialUrl = "" }: HeroSectionProps) {
     reset();
   };
 
+  const handleSampleClick = (sampleUrl: string) => {
+    setUrl(sampleUrl);
+    toast.info("Sample URL applied");
+  };
   const handleMockAnalysis = async () => {
     if (!url.trim()) {
       toast.error(t.enterUrl);
@@ -245,7 +265,7 @@ This is a demonstration of how our AI fact-checking system would analyze the con
   };
 
   const handleSaveAnalysis = async () => {
-    if (!result?.success || !result.data || !isAuthenticated) {
+    if (!result?.success || !result.data || !isSignedIn) {
       toast.error(t.cannotSave);
       return;
     }
@@ -375,6 +395,12 @@ This is a demonstration of how our AI fact-checking system would analyze the con
 
   return (
     <section className="py-24 md:py-32 relative">
+      {/* Decorative background */}
+      <div aria-hidden className="absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute left-1/2 top-[-20%] h-[42rem] w-[42rem] -translate-x-1/2 rounded-full bg-gradient-to-br from-purple-500/20 via-pink-500/10 to-transparent blur-3xl" />
+        <div className="absolute right-[-10%] bottom-[-25%] h-[28rem] w-[28rem] rounded-full bg-gradient-to-tr from-blue-500/10 via-teal-500/10 to-transparent blur-3xl" />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+      </div>
       {/* Analysis Loading Overlay */}
       {(isLoading || isMockLoading) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
@@ -406,10 +432,13 @@ This is a demonstration of how our AI fact-checking system would analyze the con
         </div>
       )}
       <div className="text-center">
-        <Badge variant="secondary" className="mb-4">
+        <Badge
+          variant="secondary"
+          className="mb-4 bg-primary/10 text-primary border border-primary/20"
+        >
           AI-Powered Fact Checking
         </Badge>
-        <h1 className="mb-6 text-4xl font-bold tracking-tight sm:text-6xl md:text-7xl">
+        <h1 className="mb-6 text-4xl font-bold tracking-tight sm:text-6xl md:text-7xl text-transparent bg-clip-text bg-gradient-to-br from-foreground to-muted-foreground">
           {t.heroTitle}
         </h1>
         <p className="mx-auto mb-8 max-w-2xl text-lg text-muted-foreground md:text-xl">
@@ -420,13 +449,16 @@ This is a demonstration of how our AI fact-checking system would analyze the con
             onSubmit={handleSubmit}
             className="flex gap-3 items-center justify-center"
           >
-            <Input
-              placeholder={t.urlPlaceholder}
-              className="flex-1 h-12 text-base min-w-0"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              disabled={isLoading || isMockLoading}
-            />
+            <div className="relative flex-1 min-w-0">
+              <ExternalLinkIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder={t.urlPlaceholder}
+                className="pl-9 h-12 text-base min-w-0"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                disabled={isLoading || isMockLoading}
+              />
+            </div>
             <Button
               type="submit"
               size="lg"
@@ -440,15 +472,12 @@ This is a demonstration of how our AI fact-checking system would analyze the con
               )}
               {isLoading ? t.analyzing : t.analyzeButton}
             </Button>
-          </form>
-
-          {/* Mock Analysis Button */}
-          <div className="flex justify-center">
             <Button
+              type="button"
               onClick={handleMockAnalysis}
               variant="outline"
               size="lg"
-              className="px-6 h-12 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-2 border-dashed border-purple-300 dark:border-purple-700 hover:border-purple-400 dark:hover:border-purple-600"
+              className="px-6 h-12 shrink-0 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-2 border-dashed border-purple-300 dark:border-purple-700 hover:border-purple-400 dark:hover:border-purple-600"
               disabled={isLoading || isMockLoading || !url.trim()}
             >
               {isMockLoading ? (
@@ -456,28 +485,35 @@ This is a demonstration of how our AI fact-checking system would analyze the con
               ) : (
                 <span className="mr-2">🧪</span>
               )}
-              {isMockLoading ? "Running Mock..." : "Try Mock Demo (Free!)"}
+              {isMockLoading ? "Running Mock..." : "Mock Demo"}
             </Button>
-          </div>
+          </form>
 
-          <p className="text-sm text-muted-foreground text-center">
-            Try it with any TikTok/Twitter(X) video URL to see the magic happen
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            {sampleLinks.map((sample, i) => (
+              <Button
+                key={sample.url}
+                variant="secondary"
+                size="sm"
+                className="rounded-full"
+                onClick={() => handleSampleClick(sample.url)}
+              >
+                {sample.label}
+                <ExternalLinkIcon className="ml-1 h-3 w-3" />
+              </Button>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground text-center">
+            Tip: Use Analyze for real results, or Mock Demo to preview without
+            API cost.
           </p>
-
-          {/* Mock Demo Description */}
-          <div className="text-center">
-            <p className="text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-4 py-2 rounded-lg inline-block">
-              💡 The mock demo simulates the full analysis process with
-              realistic data—perfect for testing without API costs!
-            </p>
-          </div>
         </div>
 
         {/* Results */}
         {(result || mockResult) && (
-          <div className="mx-auto max-w-4xl mt-8">
-            <Card>
-              <CardHeader>
+          <div className="mx-auto max-w-4xl mt-12">
+            <Card className="shadow-xl border-primary/20">
+              <CardHeader className="bg-muted/30 backdrop-blur-sm border-b">
                 <CardTitle className="flex items-center gap-2">
                   {result?.success || mockResult?.success ? (
                     <CheckCircleIcon className="h-5 w-5 text-green-500" />
@@ -863,7 +899,7 @@ This is a demonstration of how our AI fact-checking system would analyze the con
                         <div className="pt-4 border-t">
                           <div className="flex gap-3 flex-wrap">
                             {/* Save Button - Only show for authenticated users */}
-                            {isAuthenticated && (
+                            {isSignedIn && (
                               <Button
                                 onClick={handleSaveAnalysis}
                                 disabled={isSaving || isSaved}
@@ -888,7 +924,7 @@ This is a demonstration of how our AI fact-checking system would analyze the con
                           </div>
 
                           {/* Login prompt for non-authenticated users */}
-                          {!isAuthenticated && (
+                          {!isSignedIn && (
                             <p className="text-sm text-muted-foreground mt-2">
                               <Link
                                 href="/sign-in"

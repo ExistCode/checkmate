@@ -53,3 +53,8 @@ export const gsi8CommentsByUser = (userId: string, createdAtMs: number, id: stri
   GSI8PK: `USER#${userId}`,
   GSI8SK: skComment(createdAtMs, id),
 });
+
+export const gsi9AnalysisById = (id: string, userId: string, createdAtMs: number) => ({
+  GSI9PK: `ANALYSIS#${id}`,
+  GSI9SK: `USER#${userId}#${iso(createdAtMs)}`,
+});

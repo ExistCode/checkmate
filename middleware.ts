@@ -8,11 +8,7 @@ const isPublicRoute = createRouteMatcher([
   "/api/analyze-tiktok",
 ]);
 
-export default clerkMiddleware(async (auth, req) => {
-  if (!isPublicRoute(req)) {
-    await auth.protect();
-  }
-});
+export default clerkMiddleware(async (auth, req) => {});
 
 export const config = {
   matcher: [
