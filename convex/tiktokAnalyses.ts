@@ -259,7 +259,7 @@ export const addCreatorComment = mutation({
     // Get the user from the database
     const user = await ctx.db
       .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .withIndex("by_cognito_id", (q) => q.eq("cognitoId", identity.subject))
       .unique();
 
     if (!user) {
@@ -366,7 +366,7 @@ export const saveTikTokAnalysis = mutation({
     // Get the user from the database
     const user = await ctx.db
       .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .withIndex("by_cognito_id", (q) => q.eq("cognitoId", identity.subject))
       .unique();
 
     if (!user) {
@@ -487,7 +487,7 @@ export const saveTikTokAnalysisWithCredibility = mutation({
     // Get the user from the database
     const user = await ctx.db
       .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .withIndex("by_cognito_id", (q) => q.eq("cognitoId", identity.subject))
       .unique();
 
     if (!user) {
@@ -592,7 +592,7 @@ export const getUserTikTokAnalyses = query({
     // Get the user from the database
     const user = await ctx.db
       .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .withIndex("by_cognito_id", (q) => q.eq("cognitoId", identity.subject))
       .unique();
 
     if (!user) {
@@ -706,7 +706,7 @@ export const getAnalysesRequiringFactCheck = query({
     // Get the user from the database
     const user = await ctx.db
       .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .withIndex("by_cognito_id", (q) => q.eq("cognitoId", identity.subject))
       .unique();
 
     if (!user) {
@@ -749,7 +749,7 @@ export const deleteTikTokAnalysis = mutation({
     // Get the user to verify ownership
     const user = await ctx.db
       .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .withIndex("by_cognito_id", (q) => q.eq("cognitoId", identity.subject))
       .unique();
 
     if (!user || analysis.userId !== user._id) {
@@ -836,7 +836,7 @@ export const getUserAnalysisStats = query({
     // Get the user from the database
     const user = await ctx.db
       .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .withIndex("by_cognito_id", (q) => q.eq("cognitoId", identity.subject))
       .unique();
 
     if (!user) {

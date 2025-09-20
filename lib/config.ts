@@ -6,11 +6,16 @@ const configSchema = z.object({
   OPENAI_API_KEY: z.string().min(1, "OpenAI API key is required"),
   FIRECRAWL_API_KEY: z.string().min(1, "Firecrawl API key is required"),
 
-  // Clerk Authentication
-  CLERK_SECRET_KEY: z.string().min(1, "Clerk secret key is required"),
-  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z
+  // AWS & Cognito Authentication
+  AWS_REGION: z.string().min(1, "AWS region is required"),
+  COGNITO_USER_POOL_ID: z.string().min(1, "Cognito user pool ID is required"),
+  COGNITO_CLIENT_ID: z.string().min(1, "Cognito app client ID is required"),
+  COGNITO_CLIENT_SECRET: z.string().optional(),
+  COGNITO_DOMAIN: z.string().url("Invalid Cognito domain URL"),
+  COGNITO_REDIRECT_URI: z.string().url("Invalid Cognito redirect URI"),
+  COGNITO_LOGOUT_REDIRECT_URI: z
     .string()
-    .min(1, "Clerk publishable key is required"),
+    .url("Invalid Cognito logout redirect URI"),
 
   // Convex
   CONVEX_DEPLOYMENT: z.string().min(1, "Convex deployment is required"),

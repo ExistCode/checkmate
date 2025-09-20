@@ -2,9 +2,9 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 const schema = defineSchema({
-  // Users table synced from Clerk via webhooks
+  // Users table synced from Cognito via webhooks
   users: defineTable({
-    clerkId: v.string(),
+    cognitoId: v.string(),
     email: v.string(),
     firstName: v.optional(v.string()),
     lastName: v.optional(v.string()),
@@ -12,7 +12,7 @@ const schema = defineSchema({
     username: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
-  }).index("by_clerk_id", ["clerkId"]),
+  }).index("by_cognito_id", ["cognitoId"]),
 
   // Content Creator credibility tracking
   contentCreators: defineTable({

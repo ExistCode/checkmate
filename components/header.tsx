@@ -7,22 +7,30 @@ import { LanguageToggle } from "@/components/language-toggle";
 import { useLanguage } from "@/components/language-provider";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import React from "react";
+import { useAuth } from "@/components/auth/auth-context";
 
 export function Header() {
   const router = useRouter();
   const pathname = usePathname();
   const { t } = useLanguage();
+  const { user, loading, signIn, signOut } = useAuth();
   const [menuOpen, setMenuOpen] = React.useState(false);
+
+  const userInitial = React.useMemo(() => {
+    const fallback = t.anonymous;
+    const source = user?.firstName || user?.username || fallback;
+    return source.charAt(0).toUpperCase();
+  }, [user, t.anonymous]);
 
   // Inline LanguageToggle for mobile
   const MobileLanguageToggle = () => {
     const { language, setLanguage, t } = useLanguage();
     const languages = [
-      { code: "en" as const, label: t.english, flag: "🇺🇸" },
+      { code: "en" as const, label: t.english, flag: "🇬🇧" },
       { code: "ms" as const, label: t.malay, flag: "🇲🇾" },
       { code: "zh" as const, label: t.chinese, flag: "🇨🇳" },
     ];
@@ -83,8 +91,64 @@ export function Header() {
     );
   };
 
+  const renderAuthControls = (
+    closeMenu?: () => void,
+    mobile?: boolean
+  ) => {
+    if (loading) {
+      return null;
+    }
+
+    if (!user) {
+      return (
+        <Button
+          variant="default"
+          size="sm"
+          className="w-full justify-start"
+          onClick={() => {
+            if (closeMenu) {
+              closeMenu();
+            }
+            void signIn();
+          }}
+        >
+          {t.signIn}
+        </Button>
+      );
+    }
+
+    const displayName = user.firstName || user.username || t.anonymous;
+
+    return (
+      <div className={`flex items-center ${mobile ? "w-full" : "gap-3"}`}>
+        <div className="flex items-center gap-2">
+          <Avatar className="h-8 w-8">
+            {user.imageUrl ? (
+              <AvatarImage src={user.imageUrl} alt={displayName} />
+            ) : (
+              <AvatarFallback className="text-xs">{userInitial}</AvatarFallback>
+            )}
+          </Avatar>
+          <span className="text-sm font-medium">{displayName}</span>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className={mobile ? "ml-auto" : ""}
+          onClick={() => {
+            if (closeMenu) {
+              closeMenu();
+            }
+            void signOut();
+          }}
+        >
+          {t.signOut}
+        </Button>
+      </div>
+    );
+  };
+
   // Controls to show in both desktop and mobile menu
-  // Accepts optional closeMenu function for mobile
   const Controls = ({
     closeMenu,
     mobile,
@@ -117,28 +181,7 @@ export function Header() {
           <ThemeToggle />
         </>
       )}
-      <SignedOut>
-        <SignInButton>
-          <Button
-            variant="default"
-            size="sm"
-            className="w-full justify-start"
-            onClick={closeMenu}
-          >
-            {t.signIn}
-          </Button>
-        </SignInButton>
-      </SignedOut>
-      <SignedIn>
-        {mobile ? (
-          <div className="w-full flex items-center">
-            <UserButton showName />
-            <span className="ml-2">{t.checkmate}</span>
-          </div>
-        ) : (
-          <UserButton />
-        )}
-      </SignedIn>
+      {renderAuthControls(closeMenu, mobile)}
     </>
   );
 

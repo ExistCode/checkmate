@@ -1,15 +1,10 @@
 import { v } from "convex/values";
-import {
-  internalMutation,
-  internalQuery,
-  query,
-  mutation,
-} from "./_generated/server";
+import { internalQuery, query, mutation } from "./_generated/server";
 
-// Public mutation to create user from client (fallback to webhooks)
+// Public mutation to create user records after Cognito sign-in
 export const createUser = mutation({
   args: {
-    clerkId: v.string(),
+    cognitoId: v.string(),
     email: v.string(),
     firstName: v.optional(v.string()),
     lastName: v.optional(v.string()),
@@ -22,20 +17,18 @@ export const createUser = mutation({
       throw new Error("Not authenticated");
     }
 
-    // Check if user already exists
     const existingUser = await ctx.db
       .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.clerkId))
+      .withIndex("by_cognito_id", (q) => q.eq("cognitoId", args.cognitoId))
       .unique();
 
     if (existingUser) {
       return existingUser;
     }
 
-    // Create new user
     const now = Date.now();
     return await ctx.db.insert("users", {
-      clerkId: args.clerkId,
+      cognitoId: args.cognitoId,
       email: args.email,
       firstName: args.firstName,
       lastName: args.lastName,
@@ -47,90 +40,29 @@ export const createUser = mutation({
   },
 });
 
-// Internal mutation to create or update user from webhook
-export const updateOrCreateUser = internalMutation({
-  args: {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    clerkUser: v.any(), // Use v.any() to handle Clerk's UserJSON type
-  },
-  async handler(ctx, { clerkUser }) {
-    // Get primary email address
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const primaryEmail =
-      clerkUser.email_addresses.find(
-        (email: { verification: { status: string } }) =>
-          email.verification.status === "verified"
-      ) || clerkUser.email_addresses[0];
-
-    if (!primaryEmail) {
-      throw new Error("User has no email address");
-    }
-
-    // Check if user already exists
-    const existingUser = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", clerkUser.id))
-      .unique();
-
-    const userData = {
-      clerkId: clerkUser.id,
-      email: primaryEmail.email_address,
-      firstName: clerkUser.first_name || undefined,
-      lastName: clerkUser.last_name || undefined,
-      imageUrl: clerkUser.image_url || undefined,
-      username: clerkUser.username || undefined,
-      createdAt: clerkUser.created_at,
-      updatedAt: clerkUser.updated_at,
-    };
-
-    if (existingUser) {
-      // Update existing user
-      return await ctx.db.patch(existingUser._id, userData);
-    } else {
-      // Create new user
-      return await ctx.db.insert("users", userData);
-    }
-  },
-});
-
-// Internal mutation to delete user from webhook
-export const deleteUser = internalMutation({
-  args: { clerkId: v.string() },
-  async handler(ctx, { clerkId }) {
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", clerkId))
-      .unique();
-
-    if (user) {
-      await ctx.db.delete(user._id);
-    }
-  },
-});
-
-// Internal query to get user by Clerk ID (used in auth) - from documentation
+// Internal query to get user by Cognito subject (used by Convex auth helpers)
 export const getUser = internalQuery({
   args: { subject: v.string() },
   async handler(ctx, args) {
     return ctx.db
       .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.subject))
+      .withIndex("by_cognito_id", (q) => q.eq("cognitoId", args.subject))
       .unique();
   },
 });
 
-// Internal query to get user by Clerk ID (used in auth)
-export const getUserByClerkId = internalQuery({
-  args: { clerkId: v.string() },
-  async handler(ctx, { clerkId }) {
+// Internal query to get user by Cognito ID
+export const getUserByCognitoId = internalQuery({
+  args: { cognitoId: v.string() },
+  async handler(ctx, { cognitoId }) {
     return await ctx.db
       .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", clerkId))
+      .withIndex("by_cognito_id", (q) => q.eq("cognitoId", cognitoId))
       .unique();
   },
 });
 
-// Public query to get current user
+// Public query to get current user profile
 export const getCurrentUser = query({
   args: {},
   async handler(ctx) {
@@ -141,7 +73,7 @@ export const getCurrentUser = query({
 
     return await ctx.db
       .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .withIndex("by_cognito_id", (q) => q.eq("cognitoId", identity.subject))
       .unique();
   },
 });
@@ -150,7 +82,6 @@ export const getCurrentUser = query({
 export const getAllUsers = query({
   args: {},
   async handler(ctx) {
-    // Only return basic info for privacy
     return await ctx.db
       .query("users")
       .collect()
@@ -182,7 +113,6 @@ export const getCreatorComments = query({
       .order("desc")
       .collect();
 
-    // Get user information for each comment
     const commentsWithUserInfo = await Promise.all(
       comments.map(async (comment) => {
         const user = await ctx.db.get(comment.userId);
@@ -205,7 +135,7 @@ export const addCreatorComment = mutation({
     creatorId: v.string(),
     platform: v.string(),
     comment: v.string(),
-    userId: v.string(), // Clerk user ID
+    userId: v.string(), // Cognito user sub
     userName: v.string(),
   },
   async handler(ctx, args) {
@@ -214,10 +144,9 @@ export const addCreatorComment = mutation({
       throw new Error("Not authenticated");
     }
 
-    // Get the user from the database
     const user = await ctx.db
       .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", args.userId))
+      .withIndex("by_cognito_id", (q) => q.eq("cognitoId", args.userId))
       .unique();
 
     if (!user) {

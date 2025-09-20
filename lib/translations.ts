@@ -5,6 +5,7 @@ export interface Translations {
   checkmate: string;
   getNews: string;
   signIn: string;
+  signOut: string;
 
   // Hero Section
   heroTitle: string;
@@ -170,6 +171,7 @@ export const translations: Record<Language, Translations> = {
     checkmate: "Checkmate",
     getNews: "Get News",
     signIn: "Sign In",
+    signOut: "Sign Out",
 
     // Hero Section
     heroTitle: "Verify Content with Checkmate",
@@ -345,6 +347,7 @@ export const translations: Record<Language, Translations> = {
     checkmate: "Checkmate",
     getNews: "Dapatkan Berita",
     signIn: "Log Masuk",
+    signOut: "Log Keluar",
 
     // Hero Section
     heroTitle: "Sahkan Kandungan dengan Checkmate",
@@ -526,6 +529,7 @@ export const translations: Record<Language, Translations> = {
     checkmate: "Checkmate",
     getNews: "获取新闻",
     signIn: "登录",
+    signOut: "退出登录",
 
     // Hero Section
     heroTitle: "使用Checkmate验证内容",

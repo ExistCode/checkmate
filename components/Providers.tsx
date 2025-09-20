@@ -1,11 +1,13 @@
-import { ClerkProvider } from "@clerk/nextjs";
+"use client";
+
+import { AuthProvider } from "@/components/auth/auth-context";
 import { LanguageProvider } from "@/components/language-provider";
 import { ThemeProvider } from "next-themes";
 import ConvexClientProvider from "./convex-client-provider";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <ClerkProvider>
+    <AuthProvider>
       <ConvexClientProvider>
         <LanguageProvider>
           <ThemeProvider
@@ -18,6 +20,6 @@ export default function Providers({ children }: { children: React.ReactNode }) {
           </ThemeProvider>
         </LanguageProvider>
       </ConvexClientProvider>
-    </ClerkProvider>
+    </AuthProvider>
   );
 }
