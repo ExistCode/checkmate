@@ -11,11 +11,9 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { MessageSquare, Send } from "lucide-react";
-import { useQuery, useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { useState } from "react";
+import React, { useState } from "react";
 import { useLanguage } from "@/components/language-provider";
-import { useUser } from "@clerk/nextjs";
+import { useCognitoAuth } from "@/lib/cognito/client";
 
 /**
  * Props for the CreatorComments component
@@ -43,16 +41,22 @@ export const CreatorComments = ({
   className,
 }: CreatorCommentsProps) => {
   const { t } = useLanguage();
-  const { user } = useUser();
+  const { user } = useCognitoAuth();
   const [newComment, setNewComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const comments = useQuery(api.users.getCreatorComments, {
-    creatorId,
-    platform,
-  });
-
-  const submitComment = useMutation(api.users.addCreatorComment);
+  const [comments, setComments] = useState<any[] | undefined>(undefined);
+  // Load comments from DDB-backed API
+  React.useEffect(() => {
+    setComments(undefined);
+    const qs = `?limit=50`;
+    fetch(
+      `/api/creators/${encodeURIComponent(platform)}/${encodeURIComponent(creatorId)}/comments${qs}`
+    )
+      .then((r) => r.json())
+      .then((items) => setComments(items))
+      .catch(() => setComments([]));
+  }, [creatorId, platform]);
 
   /**
    * Handles comment submission
@@ -62,14 +66,22 @@ export const CreatorComments = ({
 
     setIsSubmitting(true);
     try {
-      await submitComment({
-        creatorId,
-        platform,
-        comment: newComment.trim(),
-        userId: user.id,
-        userName: user.firstName || user.username || "Anonymous",
-      });
+      const res = await fetch(
+        `/api/creators/${encodeURIComponent(platform)}/${encodeURIComponent(creatorId)}/comments`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            comment: newComment.trim(),
+            userName: (user.firstName as string) || (user.username as string) || "Anonymous",
+          }),
+        }
+      );
+      if (!res.ok) throw new Error("Failed to post");
+      const saved = await res.json();
       setNewComment("");
+      // Optimistically prepend
+      setComments((prev) => (prev ? [saved, ...prev] : [saved]));
     } catch (error) {
       console.error("Error submitting comment:", error);
     } finally {
@@ -127,7 +139,7 @@ export const CreatorComments = ({
             </p>
           ) : (
             comments.map((comment) => (
-              <div key={comment._id} className="flex gap-3">
+              <div key={comment.id || comment._id} className="flex gap-3">
                 <Avatar className="h-8 w-8">
                   <AvatarFallback className="text-xs">
                     {(comment.userName || t.anonymous).charAt(0).toUpperCase()}
@@ -142,7 +154,9 @@ export const CreatorComments = ({
                       {new Date(comment.createdAt).toLocaleDateString()}
                     </span>
                   </div>
-                  <p className="text-sm text-foreground">{comment.comment}</p>
+                  <p className="text-sm text-foreground">
+                    {comment.comment || comment.content}
+                  </p>
                 </div>
               </div>
             ))

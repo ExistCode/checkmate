@@ -204,6 +204,20 @@ Please fact-check the claims from this web article content, paying special atten
           reasoning?: string;
           sources?: Array<{ url: string; title: string; credibility: number }>;
           webSearchAnalysis?: { summary?: string };
+          originTracing?: {
+            hypothesizedOrigin?: string;
+            firstSeenDates?: Array<{
+              source: string;
+              date?: string;
+              url?: string;
+            }>;
+            propagationPaths?: string[];
+          };
+          beliefDrivers?: Array<{
+            name: string;
+            description: string;
+            references?: Array<{ title: string; url: string }>;
+          }>;
         }
 
         const resultData = factCheck.data as FactCheckData;
@@ -219,7 +233,52 @@ Please fact-check the claims from this web article content, paying special atten
             (textToFactCheck.length > 500 ? "..." : ""),
           sources: resultData.sources || [],
           flags: [],
+          originTracing: resultData.originTracing,
+          beliefDrivers: resultData.beliefDrivers,
         };
+
+        // Lightweight parsing fallback from reasoning text when structured fields are absent
+        if (
+          (!factCheckResult.originTracing || !factCheckResult.beliefDrivers) &&
+          resultData.reasoning
+        ) {
+          try {
+            const txt = resultData.reasoning;
+            const originMatch = txt.match(
+              /\n?-?\s*Origin Tracing(?:[^\n]*):?\s*([\s\S]*?)(?:\n-{2,}|\n?-?\s*Why People Believe This|$)/i
+            );
+            if (originMatch) {
+              const originText = originMatch[1].trim();
+              if (originText) {
+                factCheckResult.originTracing =
+                  factCheckResult.originTracing || ({} as any);
+                (factCheckResult.originTracing as any).hypothesizedOrigin =
+                  originText.substring(0, 600);
+              }
+            }
+            const beliefMatch = txt.match(
+              /\n?-?\s*Why People Believe This(?:[^\n]*):?\s*([\s\S]*?)(?:\n-{2,}|$)/i
+            );
+            if (beliefMatch) {
+              const beliefText = beliefMatch[1].trim();
+              if (beliefText) {
+                const items = beliefText
+                  .split(/\n(?:-\s+|\*\s+|\d+\.\s+)/)
+                  .map((s) => s.trim())
+                  .filter((s) => s.length > 0)
+                  .slice(0, 5);
+                if (items.length > 0) {
+                  factCheckResult.beliefDrivers = items.map((s) => ({
+                    name:
+                      s.split(/[:–-]/)[0].trim().slice(0, 60) ||
+                      "Belief Driver",
+                    description: s,
+                  }));
+                }
+              }
+            }
+          } catch {}
+        }
 
         logger.info("Fact-check completed", {
           requestId: context.requestId,

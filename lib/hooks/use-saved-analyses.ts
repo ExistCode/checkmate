@@ -1,59 +1,76 @@
-import { useQuery, useMutation } from "convex/react";
-import { api } from "../../convex/_generated/api";
-import { Id } from "../../convex/_generated/dataModel";
+import { useEffect, useState, useCallback } from 'react';
 
-// Hook to get all user's TikTok analyses
 export function useUserTikTokAnalyses() {
-  return useQuery(api.tiktokAnalyses.getUserTikTokAnalyses);
+  const [data, setData] = useState<any[] | undefined>(undefined);
+  useEffect(() => {
+    fetch('/api/analyses').then(r => r.json()).then(setData).catch(() => setData([]));
+  }, []);
+  return data;
 }
 
-// Hook to get a specific analysis by ID
-export function useTikTokAnalysisById(
-  analysisId: Id<"tiktokAnalyses"> | undefined
-) {
-  return useQuery(
-    api.tiktokAnalyses.getTikTokAnalysisById,
-    analysisId ? { analysisId } : "skip"
-  );
+export function useTikTokAnalysisById(analysisId: string | undefined) {
+  const [data, setData] = useState<any | undefined>(undefined);
+  useEffect(() => {
+    if (!analysisId) { setData(undefined); return; }
+    fetch(`/api/analyses/${analysisId}`).then(r => r.json()).then(setData).catch(() => setData(null));
+  }, [analysisId]);
+  return data;
 }
 
-// Hook to get analyses that require fact-checking
 export function useAnalysesRequiringFactCheck(limit?: number) {
-  return useQuery(api.tiktokAnalyses.getAnalysesRequiringFactCheck, { limit });
+  const [data, setData] = useState<any[] | undefined>(undefined);
+  useEffect(() => {
+    const qs = limit ? `?limit=${limit}` : '';
+    fetch(`/api/analyses/requires-fact-check${qs}`).then(r => r.json()).then(setData).catch(() => setData([]));
+  }, [limit]);
+  return data;
 }
 
-// Hook to get user analysis statistics
 export function useUserAnalysisStats() {
-  return useQuery(api.tiktokAnalyses.getUserAnalysisStats);
+  // Placeholder: no dedicated endpoint; compute client-side when needed
+  return undefined as any;
 }
 
-// Hook to delete an analysis
 export function useDeleteTikTokAnalysis() {
-  return useMutation(api.tiktokAnalyses.deleteTikTokAnalysis);
+  return useCallback(async ({ analysisId }: { analysisId: string }) => {
+    const res = await fetch(`/api/analyses/${analysisId}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to delete');
+    return res.json();
+  }, []);
 }
 
-// Hook to save a new analysis (alternative to API route)
 export function useSaveTikTokAnalysis() {
-  return useMutation(api.tiktokAnalyses.saveTikTokAnalysis);
+  return useCallback(async (body: any) => {
+    const res = await fetch(`/api/analyses`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (!res.ok) throw new Error('Failed to save');
+    return res.json();
+  }, []);
 }
 
-// Hook to save analysis with creator credibility rating
 export function useSaveTikTokAnalysisWithCredibility() {
-  return useMutation(api.tiktokAnalyses.saveTikTokAnalysisWithCredibility);
+  // Same endpoint, just includes creatorCredibilityRating in body
+  return useSaveTikTokAnalysis();
 }
 
-// Hook to get content creator by platform and ID
 export function useContentCreator(creatorId: string, platform: string) {
-  return useQuery(api.tiktokAnalyses.getContentCreator, {
-    creatorId,
-    platform,
-  });
+  const [data, setData] = useState<any | undefined>(undefined);
+  useEffect(() => {
+    if (!creatorId || !platform) { setData(null); return; }
+    fetch(`/api/creators/${encodeURIComponent(platform)}/${encodeURIComponent(creatorId)}`)
+      .then(r => r.json())
+      .then(setData)
+      .catch(() => setData(null));
+  }, [creatorId, platform]);
+  return data;
 }
 
-// Hook to get top creators by credibility rating
 export function useTopCreatorsByCredibility(platform?: string, limit?: number) {
-  return useQuery(api.tiktokAnalyses.getTopCreatorsByCredibility, {
-    platform,
-    limit,
-  });
+  const [data, setData] = useState<any[] | undefined>(undefined);
+  useEffect(() => {
+    const p = platform ? `platform=${encodeURIComponent(platform)}` : '';
+    const l = limit ? `limit=${limit}` : '';
+    const qs = p || l ? `?${[p, l].filter(Boolean).join('&')}` : '';
+    fetch(`/api/creators/top${qs}`).then(r => r.json()).then(setData).catch(() => setData([]));
+  }, [platform, limit]);
+  return data;
 }

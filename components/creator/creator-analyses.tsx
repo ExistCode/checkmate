@@ -10,10 +10,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BarChart3 } from "lucide-react";
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
 import { useLanguage } from "@/components/language-provider";
 import { LoadingSpinner } from "@/components/analysis";
+import { useState, useEffect } from "react";
 
 /**
  * Props for the CreatorAnalyses component
@@ -44,11 +43,17 @@ export const CreatorAnalyses = ({
   className,
 }: CreatorAnalysesProps) => {
   const { t } = useLanguage();
-  const analyses = useQuery(api.tiktokAnalyses.getAnalysesByCreator, {
-    creatorId,
-    platform,
-    limit,
-  });
+  const [analyses, setAnalyses] = useState<any[] | undefined>(undefined);
+  useEffect(() => {
+    setAnalyses(undefined);
+    const qs = `?limit=${limit}`;
+    fetch(
+      `/api/creators/${encodeURIComponent(platform)}/${encodeURIComponent(creatorId)}/analyses${qs}`
+    )
+      .then((r) => r.json())
+      .then((items) => setAnalyses(items))
+      .catch(() => setAnalyses([]));
+  }, [creatorId, platform, limit]);
 
   /**
    * Gets the appropriate color class for fact-check verdicts
@@ -99,7 +104,7 @@ export const CreatorAnalyses = ({
           <div className="space-y-4 max-w-full">
             {analyses.map((analysis) => (
               <div
-                key={analysis._id}
+                key={analysis.id || analysis._id}
                 className="border rounded-lg p-4 space-y-3 w-full overflow-hidden"
               >
                 <div className="flex items-start justify-between gap-2">

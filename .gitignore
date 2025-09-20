@@ -104,3 +104,6 @@ next-env.d.ts
 
 # Flutter web
 **/web/.last_build_id
+
+# clerk configuration (can include secrets)
+/.clerk/

@@ -7,7 +7,8 @@ import { LanguageToggle } from "@/components/language-toggle";
 import { useLanguage } from "@/components/language-provider";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+import { useCognitoAuth } from "@/lib/cognito/client";
+import { authClient } from "@/lib/better-auth-client";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import React from "react";
@@ -117,28 +118,7 @@ export function Header() {
           <ThemeToggle />
         </>
       )}
-      <SignedOut>
-        <SignInButton>
-          <Button
-            variant="default"
-            size="sm"
-            className="w-full justify-start"
-            onClick={closeMenu}
-          >
-            {t.signIn}
-          </Button>
-        </SignInButton>
-      </SignedOut>
-      <SignedIn>
-        {mobile ? (
-          <div className="w-full flex items-center">
-            <UserButton showName />
-            <span className="ml-2">{t.checkmate}</span>
-          </div>
-        ) : (
-          <UserButton />
-        )}
-      </SignedIn>
+      <AuthButtons onClickDone={closeMenu} mobile={mobile} />
     </>
   );
 
@@ -175,5 +155,64 @@ export function Header() {
         </div>
       </div>
     </header>
+  );
+}
+
+function AuthButtons({ onClickDone, mobile }: { onClickDone?: () => void; mobile?: boolean }) {
+  const { t } = useLanguage();
+  const { isSignedIn, user } = useCognitoAuth();
+
+  const goSignIn = async () => {
+    await authClient.signIn.social({ provider: "cognito" });
+  };
+  const goSignUp = async () => {
+    await authClient.signIn.social({ provider: "cognito" });
+  };
+  const goSignOut = async () => {
+    await authClient.signOut();
+  };
+
+  if (!isSignedIn) {
+    return (
+      <div className="flex items-center gap-2">
+        <Button
+          variant="default"
+          size="sm"
+          className=" justify-start"
+          onClick={() => {
+            goSignIn();
+            onClickDone?.();
+          }}
+        >
+          {t.signIn}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className=" justify-start"
+          onClick={() => {
+            goSignUp();
+            onClickDone?.();
+          }}
+        >
+          Create account
+        </Button>
+      </div>
+    );
+  }
+
+  return mobile ? (
+    <div className="w-full flex items-center justify-between">
+      <span className="truncate max-w-[10rem]">
+        {user?.username || user?.email || t.checkmate}
+      </span>
+      <Button variant="outline" size="sm" onClick={goSignOut} className="ml-2">
+        Sign out
+      </Button>
+    </div>
+  ) : (
+    <Button variant="outline" size="sm" onClick={goSignOut}>
+      Sign out
+    </Button>
   );
 }

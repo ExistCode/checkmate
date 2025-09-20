@@ -10,11 +10,10 @@
 import { useParams, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, ExternalLink } from "lucide-react";
-import { useQuery } from "convex/react";
-import { api } from "@/convex/_generated/api";
 import { useLanguage } from "@/components/language-provider";
 import { CreatorSummary, CreatorAnalyses } from "@/components/creator";
 import { LoadingSpinner, EmptyState } from "@/components/analysis";
+import { useState, useEffect } from "react";
 
 /**
  * Props for the CreatorPageContent component
@@ -41,11 +40,17 @@ export const CreatorPageContent = ({ className }: CreatorPageContentProps) => {
   const creatorId = decodeURIComponent(params.creatorId as string);
   const platform = searchParams.get("platform") || "tiktok";
 
-  // Fetch creator data
-  const creator = useQuery(api.tiktokAnalyses.getContentCreator, {
-    creatorId,
-    platform,
-  });
+  // Fetch creator data from DDB-backed API
+  const [creator, setCreator] = useState<any | undefined>(undefined);
+useEffect(() => {
+    setCreator(undefined);
+    fetch(
+      `/api/creators/${encodeURIComponent(platform)}/${encodeURIComponent(creatorId)}`
+    )
+      .then((r) => r.json())
+      .then((data) => setCreator(data))
+      .catch(() => setCreator(null));
+  }, [creatorId, platform]);
 
   // Handle loading state
   if (creator === undefined) {

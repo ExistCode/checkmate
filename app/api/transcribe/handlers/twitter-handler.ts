@@ -259,7 +259,11 @@ export class TwitterHandler extends BaseHandler {
 
 ${transcription ? `Transcribed Content: "${transcription.text}"` : ""}
 
-Please fact-check the claims from this Twitter/X post content, paying special attention to ${transcription ? "both the tweet text and the transcribed speech" : "the tweet text"}. Consider the context that this is social media content that may contain opinions, personal experiences, or claims that need verification.`;
+Please fact-check the claims from this Twitter/X post content, paying special attention to ${
+        transcription
+          ? "both the tweet text and the transcribed speech"
+          : "the tweet text"
+      }. Consider the context that this is social media content that may contain opinions, personal experiences, or claims that need verification.`;
 
       const factCheck = await researchAndFactCheck.execute(
         {
@@ -319,6 +323,16 @@ Please fact-check the claims from this Twitter/X post content, paying special at
         metadata: {
           success: factCheck.success,
           tweetId: twitterData.tweetId,
+          toolError: (factCheck as any)?.error || undefined,
+          envHints: {
+            missingExaApiKey: !process.env.EXA_API_KEY,
+            missingBedrockModelId: !process.env.BEDROCK_MODEL_ID,
+            awsRegionConfigured: !!process.env.AWS_REGION,
+          },
+          contentStats: {
+            hasTranscription: !!transcription?.text,
+            tweetTextLength: twitterData.text?.length || 0,
+          },
         },
       });
 

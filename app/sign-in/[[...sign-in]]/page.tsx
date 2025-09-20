@@ -1,7 +1,13 @@
-import { SignIn } from "@clerk/nextjs";
+"use client";
+
 import { SearchCheck } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { authClient } from "@/lib/better-auth-client";
 
 export default function Page() {
+  const goSignIn = async () => {
+    await authClient.signIn.social({ provider: "cognito" });
+  };
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
       <div className="flex flex-col items-center gap-6">
@@ -11,7 +17,9 @@ export default function Page() {
           </div>
           <span className="text-2xl font-bold">Checkmate</span>
         </div>
-        <SignIn />
+        <Button onClick={goSignIn} size="lg">
+          Continue with Cognito
+        </Button>
       </div>
     </div>
   );

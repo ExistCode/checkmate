@@ -1,9 +1,5 @@
 import { useState } from "react";
-import {
-  useSaveTikTokAnalysis,
-  useSaveTikTokAnalysisWithCredibility,
-} from "./use-saved-analyses";
-import { useConvexAuth } from "convex/react";
+// Convex-dependent save operations removed during migration.
 
 interface TranscriptionData {
   text: string;
@@ -77,13 +73,9 @@ interface TikTokAnalysisResult {
 }
 
 export function useTikTokAnalysis() {
-  const { isAuthenticated } = useConvexAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<TikTokAnalysisResult | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const saveTikTokAnalysis = useSaveTikTokAnalysis();
-  const saveTikTokAnalysisWithCredibility =
-    useSaveTikTokAnalysisWithCredibility();
 
   const analyzeTikTok = async (
     url: string,
@@ -146,93 +138,7 @@ export function useTikTokAnalysis() {
       // Removed console.log statements for newsDetection, factCheck, and summary
       // Removed console.log for no fact-check results
 
-      // Auto-save is disabled by default to prevent duplicates
-      // The user can manually save from the UI if needed
-      if (saveToDb && isAuthenticated && analysis.success && analysis.data) {
-        try {
-          setIsSaving(true);
-
-          // Use enhanced save function if credibility rating is available
-          if (analysis.data.creatorCredibilityRating !== undefined) {
-            await saveTikTokAnalysisWithCredibility({
-              videoUrl: analysis.data.metadata.originalUrl,
-              transcription: {
-                text: analysis.data.transcription.text,
-                duration: undefined, // API doesn't return duration yet
-                language: analysis.data.transcription.language,
-              },
-              metadata: analysis.data.metadata,
-              newsDetection: analysis.data.newsDetection || undefined,
-              factCheck: analysis.data.factCheck
-                ? {
-                    ...analysis.data.factCheck,
-                    sources: analysis.data.factCheck.sources?.map((s) => ({
-                      title: s.title,
-                      url: s.url,
-                      source: s.source,
-                      relevance: s.relevance,
-                    })),
-                    results: (analysis.data.factCheck.results || []).map(
-                      (result) => ({
-                        claim: result.claim,
-                        status: result.status,
-                        confidence: result.confidence,
-                        analysis: result.analysis,
-                        sources: result.sources?.map((s) => s.url) || [],
-                        error: result.error,
-                      })
-                    ),
-                  }
-                : undefined,
-              requiresFactCheck: analysis.data.requiresFactCheck,
-              creatorCredibilityRating: analysis.data.creatorCredibilityRating,
-            });
-          } else {
-            // Fallback to regular save if no credibility rating
-            await saveTikTokAnalysis({
-              videoUrl: analysis.data.metadata.originalUrl,
-              transcription: {
-                text: analysis.data.transcription.text,
-                duration: undefined, // API doesn't return duration yet
-                language: analysis.data.transcription.language,
-              },
-              metadata: analysis.data.metadata,
-              newsDetection: analysis.data.newsDetection || undefined,
-              factCheck: analysis.data.factCheck
-                ? {
-                    ...analysis.data.factCheck,
-                    sources: analysis.data.factCheck.sources?.map((s) => ({
-                      title: s.title,
-                      url: s.url,
-                      source: s.source,
-                      relevance: s.relevance,
-                    })),
-                    results: (analysis.data.factCheck.results || []).map(
-                      (result) => ({
-                        claim: result.claim,
-                        status: result.status,
-                        confidence: result.confidence,
-                        analysis: result.analysis,
-                        sources: result.sources?.map((s) => s.url) || [],
-                        error: result.error,
-                      })
-                    ),
-                  }
-                : undefined,
-              requiresFactCheck: analysis.data.requiresFactCheck,
-            });
-          }
-        } catch (saveError) {
-          console.error("Failed to save analysis to database:", saveError);
-          console.error(
-            "Save error details:",
-            JSON.stringify(saveError, null, 2)
-          );
-          // Don't fail the entire operation if saving fails
-        } finally {
-          setIsSaving(false);
-        }
-      }
+      // Auto-save temporarily disabled while Convex is removed.
 
       setResult(analysis);
       return analysis;

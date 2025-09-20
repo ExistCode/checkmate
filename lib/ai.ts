@@ -1,14 +1,21 @@
 import { bedrock } from "@ai-sdk/amazon-bedrock";
-import { config } from "./config";
 
 // Centralized AI model helpers for Bedrock
 
 // Default Bedrock text model id from env (with reasonable default in config)
-export const defaultTextModelId = config.BEDROCK_MODEL_ID;
+if (!process.env.BEDROCK_MODEL_ID) {
+  throw new Error("BEDROCK_MODEL_ID is not set");
+}
+
+export const defaultTextModelId = process.env.BEDROCK_MODEL_ID;
 
 // Factory for the text-generation model used across the app
 export function textModel(modelId?: string) {
-  return bedrock(modelId || defaultTextModelId);
+  const resolvedModelId = modelId || defaultTextModelId;
+  if (!resolvedModelId) {
+    throw new Error("BEDROCK_MODEL_ID is not set");
+  }
+  return bedrock(resolvedModelId);
 }
 
 // Optionally expose the provider for advanced cases

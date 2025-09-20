@@ -421,7 +421,9 @@ export class TikTokHandler extends BaseHandler {
 
 ${transcription ? `Transcribed Content: "${transcription.text}"` : ""}
 
-Please fact-check the claims from this TikTok video content, paying special attention to both the video text${transcription ? " and the transcribed speech" : ""}. Consider the context that this is social media content that may contain opinions, personal experiences, or claims that need verification.`;
+Please fact-check the claims from this TikTok video content, paying special attention to both the video text${
+        transcription ? " and the transcribed speech" : ""
+      }. Consider the context that this is social media content that may contain opinions, personal experiences, or claims that need verification.`;
 
       const factCheck = await researchAndFactCheck.execute(
         {
@@ -442,6 +444,20 @@ Please fact-check the claims from this TikTok video content, paying special atte
           reasoning?: string;
           sources?: Array<{ url: string; title: string; credibility: number }>;
           webSearchAnalysis?: { summary?: string };
+          originTracing?: {
+            hypothesizedOrigin?: string;
+            firstSeenDates?: Array<{
+              source: string;
+              date?: string;
+              url?: string;
+            }>;
+            propagationPaths?: string[];
+          };
+          beliefDrivers?: Array<{
+            name: string;
+            description: string;
+            references?: Array<{ title: string; url: string }>;
+          }>;
         }
 
         const resultData = factCheck.data as FactCheckData;
@@ -457,7 +473,55 @@ Please fact-check the claims from this TikTok video content, paying special atte
             (textToFactCheck.length > 500 ? "..." : ""),
           sources: resultData.sources || [],
           flags: [],
+          originTracing: resultData.originTracing,
+          beliefDrivers: resultData.beliefDrivers,
         };
+
+        // Lightweight parsing fallback from reasoning text when structured fields are absent
+        if (
+          (!factCheckResult.originTracing || !factCheckResult.beliefDrivers) &&
+          resultData.reasoning
+        ) {
+          try {
+            const txt = resultData.reasoning;
+            // Extract Origin Tracing section
+            const originMatch = txt.match(
+              /\n?-?\s*Origin Tracing(?:[^\n]*):?\s*([\s\S]*?)(?:\n-{2,}|\n?-?\s*Why People Believe This|$)/i
+            );
+            if (originMatch) {
+              const originText = originMatch[1].trim();
+              if (originText) {
+                factCheckResult.originTracing =
+                  factCheckResult.originTracing || {};
+                (factCheckResult.originTracing as any).hypothesizedOrigin =
+                  originText.substring(0, 600);
+              }
+            }
+
+            // Extract Why People Believe This section
+            const beliefMatch = txt.match(
+              /\n?-?\s*Why People Believe This(?:[^\n]*):?\s*([\s\S]*?)(?:\n-{2,}|$)/i
+            );
+            if (beliefMatch) {
+              const beliefText = beliefMatch[1].trim();
+              if (beliefText) {
+                const items = beliefText
+                  .split(/\n(?:-\s+|\*\s+|\d+\.\s+)/)
+                  .map((s) => s.trim())
+                  .filter((s) => s.length > 0)
+                  .slice(0, 5);
+                if (items.length > 0) {
+                  factCheckResult.beliefDrivers = items.map((s) => ({
+                    name:
+                      s.split(/[:–-]/)[0].trim().slice(0, 60) ||
+                      "Belief Driver",
+                    description: s,
+                  }));
+                }
+              }
+            }
+          } catch {}
+        }
 
         logger.info("Fact-check completed", {
           requestId: context.requestId,
@@ -477,7 +541,19 @@ Please fact-check the claims from this TikTok video content, paying special atte
         requestId: context.requestId,
         platform: this.platform,
         operation: "fact-check",
-        metadata: { success: factCheck.success },
+        metadata: {
+          success: factCheck.success,
+          toolError: (factCheck as any)?.error || undefined,
+          envHints: {
+            missingExaApiKey: !process.env.EXA_API_KEY,
+            missingBedrockModelId: !process.env.BEDROCK_MODEL_ID,
+            awsRegionConfigured: !!process.env.AWS_REGION,
+          },
+          contentStats: {
+            hasTranscription: !!transcription?.text,
+            descriptionLength: (extractedData as any)?.description?.length || 0,
+          },
+        },
       });
 
       // Return fallback result

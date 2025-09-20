@@ -1,23 +1,20 @@
-import { ClerkProvider } from "@clerk/nextjs";
 import { LanguageProvider } from "@/components/language-provider";
 import { ThemeProvider } from "next-themes";
-import ConvexClientProvider from "./convex-client-provider";
+import CognitoProvider from "@/components/CognitoProvider";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <ClerkProvider>
-      <ConvexClientProvider>
-        <LanguageProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            {children}
-          </ThemeProvider>
-        </LanguageProvider>
-      </ConvexClientProvider>
-    </ClerkProvider>
+    <CognitoProvider>
+      <LanguageProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {children}
+        </ThemeProvider>
+      </LanguageProvider>
+    </CognitoProvider>
   );
 }

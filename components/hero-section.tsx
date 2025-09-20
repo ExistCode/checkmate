@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { useTikTokAnalysis } from "@/lib/hooks/use-tiktok-analysis";
 import { useSaveTikTokAnalysisWithCredibility } from "@/lib/hooks/use-saved-analyses";
-import { useConvexAuth } from "convex/react";
+import { useCognitoAuth } from "@/lib/cognito/client";
 import { toast } from "sonner";
 import { AnalysisRenderer } from "@/components/analysis-renderer";
 import { useLanguage } from "@/components/language-provider";
@@ -45,6 +45,14 @@ interface FactCheckResult {
   content: string;
   isVerified: boolean;
   error?: string;
+  originTracing?: {
+    hypothesizedOrigin?: string;
+  };
+  beliefDrivers?: Array<{
+    name: string;
+    description: string;
+    references?: Array<{ title: string; url: string }>;
+  }>;
 }
 
 export function HeroSection({ initialUrl = "" }: HeroSectionProps) {
@@ -94,7 +102,7 @@ export function HeroSection({ initialUrl = "" }: HeroSectionProps) {
     };
   } | null>(null);
   const { analyzeTikTok, isLoading, result, reset } = useTikTokAnalysis();
-  const { isAuthenticated } = useConvexAuth();
+  const { isSignedIn } = useCognitoAuth();
   const saveTikTokAnalysisWithCredibility =
     useSaveTikTokAnalysisWithCredibility();
   const router = useRouter();
@@ -245,7 +253,7 @@ This is a demonstration of how our AI fact-checking system would analyze the con
   };
 
   const handleSaveAnalysis = async () => {
-    if (!result?.success || !result.data || !isAuthenticated) {
+    if (!result?.success || !result.data || !isSignedIn) {
       toast.error(t.cannotSave);
       return;
     }
@@ -834,6 +842,45 @@ This is a demonstration of how our AI fact-checking system would analyze the con
                                       </div>
                                     )}
 
+                                  {(
+                                    currentData.factCheck as unknown as FactCheckResult
+                                  ).originTracing?.hypothesizedOrigin && (
+                                    <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+                                      <p className="font-medium mb-2 text-base">Origin:</p>
+                                      <AnalysisRenderer
+                                        content={
+                                          (
+                                            currentData.factCheck as unknown as FactCheckResult
+                                          ).originTracing!.hypothesizedOrigin as string
+                                        }
+                                      />
+                                    </div>
+                                  )}
+
+                                  {(
+                                    currentData.factCheck as unknown as FactCheckResult
+                                  ).beliefDrivers &&
+                                    (
+                                      currentData.factCheck as unknown as FactCheckResult
+                                    ).beliefDrivers!.length > 0 && (
+                                      <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+                                        <p className="font-medium mb-2 text-base">
+                                          Why People Believe This:
+                                        </p>
+                                        <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
+                                          {(
+                                            currentData.factCheck as unknown as FactCheckResult
+                                          ).beliefDrivers!
+                                            .slice(0, 5)
+                                            .map((d, i) => (
+                                              <li key={i}>
+                                                <span className="font-medium">{d.name}:</span> {d.description}
+                                              </li>
+                                            ))}
+                                        </ul>
+                                      </div>
+                                    )}
+
                                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                                     <span>
                                       Confidence:{" "}
@@ -863,7 +910,7 @@ This is a demonstration of how our AI fact-checking system would analyze the con
                         <div className="pt-4 border-t">
                           <div className="flex gap-3 flex-wrap">
                             {/* Save Button - Only show for authenticated users */}
-                            {isAuthenticated && (
+                            {isSignedIn && (
                               <Button
                                 onClick={handleSaveAnalysis}
                                 disabled={isSaving || isSaved}
@@ -888,7 +935,7 @@ This is a demonstration of how our AI fact-checking system would analyze the con
                           </div>
 
                           {/* Login prompt for non-authenticated users */}
-                          {!isAuthenticated && (
+                          {!isSignedIn && (
                             <p className="text-sm text-muted-foreground mt-2">
                               <Link
                                 href="/sign-in"

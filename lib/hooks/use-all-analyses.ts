@@ -1,11 +1,12 @@
-import { useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 
 // Hook to get all TikTok analyses from all users with client-side pagination
 export function useAllAnalyses() {
   const [displayCount, setDisplayCount] = useState(10);
-  const allAnalyses = useQuery(api.tiktokAnalyses.getAllAnalyses);
+  const [allAnalyses, setAllAnalyses] = useState<any[] | undefined>(undefined);
+  useEffect(() => {
+    fetch('/api/analyses/all?limit=200').then(r=>r.json()).then(setAllAnalyses).catch(()=>setAllAnalyses([]));
+  }, []);
 
   const displayedAnalyses = useMemo(() => {
     if (!allAnalyses) return [];
@@ -32,5 +33,9 @@ export function useAllAnalyses() {
 
 // Hook to get analysis statistics from all users
 export function useAllAnalysisStats() {
-  return useQuery(api.tiktokAnalyses.getAllAnalysisStats);
+  const [stats, setStats] = useState<any | undefined>(undefined);
+  useEffect(() => {
+    fetch('/api/analyses/stats').then(r=>r.json()).then(setStats).catch(()=>setStats(undefined));
+  }, []);
+  return stats;
 }

@@ -26,6 +26,10 @@ Resources:
           AttributeType: S
         - AttributeName: SK
           AttributeType: S
+        - AttributeName: GSI9PK
+          AttributeType: S
+        - AttributeName: GSI9SK
+          AttributeType: S
         - AttributeName: GSI1PK
           AttributeType: S
         - AttributeName: GSI1SK
@@ -128,6 +132,14 @@ Resources:
               KeyType: RANGE
           Projection:
             ProjectionType: KEYS_ONLY
+        - IndexName: GSI9
+          KeySchema:
+            - AttributeName: GSI9PK
+              KeyType: HASH
+            - AttributeName: GSI9SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: KEYS_ONLY
 
 Outputs:
   TableName:
@@ -138,4 +150,3 @@ Outputs:
     Value: !GetAtt CheckmateTable.StreamArn
     Export:
       Name: !Sub "${AWS::StackName}-StreamArn"
-

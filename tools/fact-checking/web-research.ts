@@ -1,6 +1,12 @@
 import { tool, generateText } from "ai";
 import { z } from "zod";
-import { textModel, DEFAULT_QUERY_MAX_TOKENS, DEFAULT_QUERY_TEMPERATURE, DEFAULT_ANALYSIS_MAX_TOKENS, DEFAULT_ANALYSIS_TEMPERATURE } from "../../lib/ai";
+import {
+  textModel,
+  DEFAULT_QUERY_MAX_TOKENS,
+  DEFAULT_QUERY_TEMPERATURE,
+  DEFAULT_ANALYSIS_MAX_TOKENS,
+  DEFAULT_ANALYSIS_TEMPERATURE,
+} from "../../lib/ai";
 import { evaluateDomainCredibility } from "./domain-credibility";
 import { analyzeVerificationStatus } from "./verification-analysis";
 
@@ -98,7 +104,7 @@ export const researchAndFactCheck = tool({
        * Uses GPT to analyze the content and generate an optimal search query
        * that will find the most relevant fact-checking and news sources.
        */
-      const searchQueryPrompt = `You are an expert fact-checker. Create an optimal search query to find credible sources and fact-check the following content. The query should be designed to find reliable news sources, fact-checking websites, and official sources that can verify or debunk the claims made.
+      const searchQueryPrompt = `You are an expert fact-checker. Create an optimal search query to find credible sources and fact-check the following content. The query should be designed to find reliable news sources, fact-checking websites, and official sources that can verify or debunk the claims made. If the content appears to be misinformation, ensure queries will help identify the origin of the claim and reputable analyses of why people believe it.
 
 Content to fact-check:
 Title: ${title || "N/A"}
@@ -231,11 +237,16 @@ Return only the search query, nothing else.`;
             );
 
             // Aggregate content for analysis with full content when available
-            searchContent += `\n\nSource: ${result.title || "Untitled"} (${hostname})`;
+            searchContent += `\n\nSource: ${
+              result.title || "Untitled"
+            } (${hostname})`;
 
             if (contentResult) {
               if (contentResult.text) {
-                searchContent += `\nFull Content: ${contentResult.text.substring(0, 2000)}`;
+                searchContent += `\nFull Content: ${contentResult.text.substring(
+                  0,
+                  2000
+                )}`;
               }
               if (contentResult.summary) {
                 searchContent += `\nSummary: ${contentResult.summary}`;
@@ -244,7 +255,9 @@ Return only the search query, nothing else.`;
                 contentResult.highlights &&
                 contentResult.highlights.length > 0
               ) {
-                searchContent += `\nHighlights: ${contentResult.highlights.join("; ")}`;
+                searchContent += `\nHighlights: ${contentResult.highlights.join(
+                  "; "
+                )}`;
               }
               if (contentResult.publishedDate) {
                 searchContent += `\nPublished: ${contentResult.publishedDate}`;
@@ -297,13 +310,19 @@ Please provide a comprehensive fact-check analysis with:
 3. Specific claims that are accurate or inaccurate
 4. Reasoning behind your assessment
 5. Any biases or credibility concerns
+6. If the content is false or misleading, add:
+   - Likely origin of the claim (with earliest known appearances, links, or citations)
+   - Propagation paths (platforms/influencers/forums) if identifiable
+   - Psychology/science-backed reasons why people might believe this (e.g., confirmation bias, motivated reasoning, narrative appeal), with references if possible
 
 Format your response clearly with sections for:
 - Conclusion and Summary
 - Accurate Information 
 - Misleading Information (if any)
 - Source Analysis
-- Reasoning`;
+- Reasoning
+- Origin Tracing (if applicable)
+- Why People Believe This (with scientific references if available)`;
 
         const { text } = await generateText({
           model: textModel(),
@@ -360,6 +379,7 @@ Format your response clearly with sections for:
             (s) => s.relevance > 0.7
           ).length,
           reasoning: factCheckAnalysis || searchContent,
+          // New structured fields derived via lightweight extraction prompts later in handlers
         },
       };
     } catch (error) {

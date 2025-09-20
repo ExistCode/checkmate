@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useTikTokAnalysisById } from "@/lib/hooks/use-saved-analyses";
-import { Id } from "@/convex/_generated/dataModel";
 import {
   Card,
   CardContent,
@@ -73,11 +72,7 @@ const getStatusBadge = (status: string) => {
   }
 };
 
-export function AnalysisPage({
-  analysisId,
-}: {
-  analysisId: Id<"tiktokAnalyses">;
-}) {
+export function AnalysisPage({ analysisId }: { analysisId: string }) {
   const { t } = useLanguage();
   const analysis = useTikTokAnalysisById(analysisId);
   const [expandedClaims, setExpandedClaims] = useState<Record<number, boolean>>(
@@ -157,7 +152,9 @@ export function AnalysisPage({
               )}
               <span className="flex items-center gap-1.5">
                 <Calendar className="h-4 w-4" />
-                {formatDate(analysis._creationTime)}
+                {formatDate(
+                  (analysis as any).createdAt || (analysis as any)._creationTime
+                )}
               </span>
             </CardDescription>
           </CardHeader>
@@ -194,7 +191,9 @@ export function AnalysisPage({
               {analysis.metadata?.creator && analysis.metadata?.platform && (
                 <Button asChild variant="outline" size="sm">
                   <Link
-                    href={`/creator/${encodeURIComponent(analysis.metadata.creator)}?platform=${analysis.metadata.platform}`}
+                    href={`/creator/${encodeURIComponent(
+                      analysis.metadata.creator
+                    )}?platform=${analysis.metadata.platform}`}
                   >
                     <User className="h-4 w-4 mr-2" />
                     {t.viewAuthor}
@@ -283,10 +282,10 @@ export function AnalysisPage({
                   analysis.factCheck.verdict === "true"
                     ? "border-l-green-500"
                     : analysis.factCheck.verdict === "false"
-                      ? "border-l-red-500"
-                      : analysis.factCheck.verdict === "misleading"
-                        ? "border-l-yellow-500"
-                        : "border-l-gray-500"
+                    ? "border-l-red-500"
+                    : analysis.factCheck.verdict === "misleading"
+                    ? "border-l-yellow-500"
+                    : "border-l-gray-500"
                 }`}
               >
                 <CardContent className="p-4">
@@ -333,7 +332,7 @@ export function AnalysisPage({
                           <div className="flex flex-wrap gap-2">
                             {analysis.factCheck.sources
                               .slice(0, 5)
-                              .map((source, sourceIndex) => (
+                              .map((source: any, sourceIndex: number) => (
                                 <Button
                                   key={sourceIndex}
                                   size="sm"
@@ -353,6 +352,48 @@ export function AnalysisPage({
                                 </Button>
                               ))}
                           </div>
+                        </div>
+                      )}
+
+                    {/* Origin Tracing */}
+                    {analysis.factCheck.originTracing?.hypothesizedOrigin && (
+                      <div className="bg-muted p-4 rounded-lg">
+                        <p className="font-medium mb-2 text-base">Origin:</p>
+                        <div className="text-sm text-muted-foreground">
+                          <AnalysisRenderer
+                            content={
+                              analysis.factCheck.originTracing
+                                .hypothesizedOrigin
+                            }
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Why People Believe This */}
+                    {analysis.factCheck.beliefDrivers &&
+                      analysis.factCheck.beliefDrivers.length > 0 && (
+                        <div className="bg-muted p-4 rounded-lg">
+                          <p className="font-medium mb-2 text-base">
+                            Why People Believe This:
+                          </p>
+                          <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
+                            {analysis.factCheck.beliefDrivers
+                              .slice(0, 5)
+                              .map(
+                                (
+                                  d: { name: string; description: string },
+                                  i: number
+                                ) => (
+                                  <li key={i}>
+                                    <span className="font-medium">
+                                      {d.name}:
+                                    </span>{" "}
+                                    {d.description}
+                                  </li>
+                                )
+                              )}
+                          </ul>
                         </div>
                       )}
 
@@ -377,7 +418,7 @@ export function AnalysisPage({
             {/* Legacy format with results array */}
             {analysis.factCheck.results &&
               analysis.factCheck.results.length > 0 &&
-              analysis.factCheck.results.map((result, index) => {
+              analysis.factCheck.results.map((result: any, index: number) => {
                 const isExpanded = expandedClaims[index] || false;
                 const analysisText = result.analysis || "";
                 const shouldTruncate = analysisText.length > 300;
@@ -389,10 +430,10 @@ export function AnalysisPage({
                       result.status === "true"
                         ? "border-l-green-500"
                         : result.status === "false"
-                          ? "border-l-red-500"
-                          : result.status === "misleading"
-                            ? "border-l-yellow-500"
-                            : "border-l-gray-500"
+                        ? "border-l-red-500"
+                        : result.status === "misleading"
+                        ? "border-l-yellow-500"
+                        : "border-l-gray-500"
                     }`}
                   >
                     <CardContent className="p-4">
@@ -461,24 +502,26 @@ export function AnalysisPage({
                             <div className="flex flex-wrap gap-2">
                               {result.sources
                                 .slice(0, 5)
-                                .map((sourceUrl, sourceIndex) => (
-                                  <Button
-                                    key={sourceIndex}
-                                    size="sm"
-                                    variant="outline"
-                                    asChild
-                                  >
-                                    <a
-                                      href={sourceUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-xs"
+                                .map(
+                                  (sourceUrl: string, sourceIndex: number) => (
+                                    <Button
+                                      key={sourceIndex}
+                                      size="sm"
+                                      variant="outline"
+                                      asChild
                                     >
-                                      {new URL(sourceUrl).hostname}
-                                      <ExternalLink className="h-3 w-3 ml-1" />
-                                    </a>
-                                  </Button>
-                                ))}
+                                      <a
+                                        href={sourceUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-xs"
+                                      >
+                                        {new URL(sourceUrl).hostname}
+                                        <ExternalLink className="h-3 w-3 ml-1" />
+                                      </a>
+                                    </Button>
+                                  )
+                                )}
                             </div>
                           </div>
                         )}
