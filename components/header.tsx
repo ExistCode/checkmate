@@ -7,7 +7,7 @@ import { LanguageToggle } from "@/components/language-toggle";
 import { useLanguage } from "@/components/language-provider";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+import { useCognitoAuth } from "@/lib/cognito/client";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import React from "react";
@@ -117,28 +117,7 @@ export function Header() {
           <ThemeToggle />
         </>
       )}
-      <SignedOut>
-        <SignInButton>
-          <Button
-            variant="default"
-            size="sm"
-            className=" justify-start"
-            onClick={closeMenu}
-          >
-            {t.signIn}
-          </Button>
-        </SignInButton>
-      </SignedOut>
-      <SignedIn>
-        {mobile ? (
-          <div className="w-full flex items-center">
-            <UserButton showName />
-            <span className="ml-2">{t.checkmate}</span>
-          </div>
-        ) : (
-          <UserButton />
-        )}
-      </SignedIn>
+      <AuthButtons onClickDone={closeMenu} mobile={mobile} />
     </>
   );
 
@@ -175,5 +154,54 @@ export function Header() {
         </div>
       </div>
     </header>
+  );
+}
+
+function AuthButtons({ onClickDone, mobile }: { onClickDone?: () => void; mobile?: boolean }) {
+  const { t } = useLanguage();
+  const { isSignedIn, user } = useCognitoAuth();
+  const domain = process.env.NEXT_PUBLIC_COGNITO_DOMAIN!;
+  const clientId = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID!;
+
+  const goSignIn = () => {
+    const redirect = encodeURIComponent(`${window.location.origin}/auth/callback`);
+    const url = `https://${domain}/oauth2/authorize?client_id=${clientId}&response_type=token&redirect_uri=${redirect}&scope=openid+email+profile`;
+    window.location.href = url;
+  };
+  const goSignOut = () => {
+    const redirect = encodeURIComponent(`${window.location.origin}`);
+    const url = `https://${domain}/logout?client_id=${clientId}&logout_uri=${redirect}`;
+    window.location.href = url;
+  };
+
+  if (!isSignedIn) {
+    return (
+      <Button
+        variant="default"
+        size="sm"
+        className=" justify-start"
+        onClick={() => {
+          goSignIn();
+          onClickDone?.();
+        }}
+      >
+        {t.signIn}
+      </Button>
+    );
+  }
+
+  return mobile ? (
+    <div className="w-full flex items-center justify-between">
+      <span className="truncate max-w-[10rem]">
+        {user?.username || user?.email || t.checkmate}
+      </span>
+      <Button variant="outline" size="sm" onClick={goSignOut} className="ml-2">
+        Sign out
+      </Button>
+    </div>
+  ) : (
+    <Button variant="outline" size="sm" onClick={goSignOut}>
+      Sign out
+    </Button>
   );
 }

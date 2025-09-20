@@ -5,7 +5,9 @@ const configSchema = z.object({
   // API Keys
   FIRECRAWL_API_KEY: z.string().min(1, "Firecrawl API key is required"),
   // AWS / Bedrock
-  AWS_REGION: z.string().min(1, "AWS region (AWS_REGION) is required for Bedrock"),
+  AWS_REGION: z
+    .string()
+    .min(1, "AWS region (AWS_REGION) is required for Bedrock"),
   BEDROCK_MODEL_ID: z
     .string()
     .default("anthropic.claude-3-haiku-20240307-v1:0"),
@@ -14,20 +16,21 @@ const configSchema = z.object({
   DDB_TABLE_CREATORS: z.string().optional(),
   DDB_TABLE_USERS: z.string().optional(),
   DDB_TABLE_COMMENTS: z.string().optional(),
-  // Cognito (optional during migration)
-  COGNITO_USER_POOL_ID: z.string().optional(),
-  COGNITO_CLIENT_ID: z.string().optional(),
-  COGNITO_DOMAIN: z.string().optional(),
-
-  // Clerk Authentication
-  CLERK_SECRET_KEY: z.string().min(1, "Clerk secret key is required"),
-  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z
+  // Cognito
+  COGNITO_USER_POOL_ID: z.string().min(1, "Cognito user pool id is required"),
+  COGNITO_CLIENT_ID: z.string().min(1, "Cognito client id is required"),
+  COGNITO_DOMAIN: z
     .string()
-    .min(1, "Clerk publishable key is required"),
+    .min(1, "Cognito domain is required (e.g. myapp.auth.us-east-1.amazoncognito.com)"),
+  // Expose for client-side redirects to Hosted UI
+  NEXT_PUBLIC_COGNITO_CLIENT_ID: z.string().min(1, "NEXT_PUBLIC_COGNITO_CLIENT_ID is required"),
+  NEXT_PUBLIC_COGNITO_DOMAIN: z
+    .string()
+    .min(1, "NEXT_PUBLIC_COGNITO_DOMAIN is required"),
 
-  // Convex
-  CONVEX_DEPLOYMENT: z.string().min(1, "Convex deployment is required"),
-  NEXT_PUBLIC_CONVEX_URL: z.string().url("Invalid Convex URL"),
+  // Convex (removed)
+  // CONVEX_DEPLOYMENT: z.string().min(1, "Convex deployment is required"),
+  // NEXT_PUBLIC_CONVEX_URL: z.string().url("Invalid Convex URL"),
 
   // App Configuration
   NODE_ENV: z

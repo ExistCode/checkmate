@@ -1,20 +1,51 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextResponse } from 'next/server';
+import { jwtVerify, createRemoteJWKSet } from 'jose';
 
-const isPublicRoute = createRouteMatcher([
-  "/sign-in(.*)",
-  "/sign-up(.*)",
-  "/",
-  "/api/transcribe(.*)",
-  "/api/analyze-tiktok",
-]);
+const PUBLIC_ROUTES = [
+  '/',
+  '/sign-in',
+  '/sign-up',
+  '/auth/callback',
+  '/api/transcribe',
+  '/api/analyze-tiktok',
+];
 
-export default clerkMiddleware(async (auth, req) => {});
+const isPublic = (path: string) => PUBLIC_ROUTES.some((p) => path.startsWith(p));
+
+const jwks = createRemoteJWKSet(new URL(
+  `https://cognito-idp.${process.env.AWS_REGION}.amazonaws.com/${process.env.COGNITO_USER_POOL_ID}/.well-known/jwks.json`
+));
+
+export async function middleware(req: Request) {
+  const url = new URL(req.url);
+  if (isPublic(url.pathname)) return NextResponse.next();
+
+  const bearer = req.headers.get('authorization');
+  const token = bearer?.startsWith('Bearer ')
+    ? bearer.slice('Bearer '.length)
+    : (typeof (req as any).cookies?.get === 'function'
+        ? (req as any).cookies.get('id_token')?.value || (req as any).cookies.get('access_token')?.value
+        : undefined);
+
+  if (!token) return NextResponse.redirect(new URL('/sign-in', url));
+
+  try {
+    const { payload } = await jwtVerify(token, jwks, {
+      issuer: `https://cognito-idp.${process.env.AWS_REGION}.amazonaws.com/${process.env.COGNITO_USER_POOL_ID}`,
+      audience: process.env.COGNITO_CLIENT_ID,
+    });
+    const res = NextResponse.next();
+    res.headers.set('x-auth-provider', 'cognito');
+    res.headers.set('x-auth-subject', String(payload.sub));
+    return res;
+  } catch (err) {
+    return NextResponse.redirect(new URL('/sign-in', url));
+  }
+}
 
 export const config = {
   matcher: [
-    // Skip Next.js internals and all static files, unless found in search params
     "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    // Always run for API routes
     "/(api|trpc)(.*)",
   ],
 };

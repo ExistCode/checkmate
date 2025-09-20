@@ -1,7 +1,16 @@
-import { SignUp } from "@clerk/nextjs";
+"use client";
+
 import { SearchCheck } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function Page() {
+  const domain = process.env.NEXT_PUBLIC_COGNITO_DOMAIN!;
+  const clientId = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID!;
+  const goSignUp = () => {
+    const redirect = encodeURIComponent(`${window.location.origin}/auth/callback`);
+    const url = `https://${domain}/signup?client_id=${clientId}&response_type=token&redirect_uri=${redirect}&scope=openid+email+profile`;
+    window.location.href = url;
+  };
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
       <div className="flex flex-col items-center gap-6">
@@ -11,7 +20,9 @@ export default function Page() {
           </div>
           <span className="text-2xl font-bold">Checkmate</span>
         </div>
-        <SignUp />
+        <Button onClick={goSignUp} size="lg">
+          Create account
+        </Button>
       </div>
     </div>
   );

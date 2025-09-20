@@ -2,11 +2,11 @@ export type IsoTime = string; // ISO 8601 string
 
 export interface UserItem {
   PK: string; // USER#<userId>
-  SK: 'PROFILE';
-  type: 'USER';
+  SK: "PROFILE";
+  type: "USER";
   userId: string;
   // Generic auth identity (supports Clerk or Cognito)
-  authProvider: 'clerk' | 'cognito';
+  authProvider: "clerk" | "cognito";
   authSubject: string; // Clerk ID or Cognito sub
   // Optional legacy fields for compatibility
   clerkId?: string;
@@ -24,8 +24,8 @@ export interface UserItem {
 
 export interface CreatorItem {
   PK: string; // CREATOR#<creatorId>#PLATFORM#<platform>
-  SK: 'PROFILE';
-  type: 'CREATOR';
+  SK: "PROFILE";
+  type: "CREATOR";
   creatorId: string;
   platform: string;
   creatorName?: string;
@@ -45,7 +45,7 @@ export interface CreatorItem {
 export interface AnalysisItem {
   PK: string; // USER#<userId>
   SK: string; // ANALYSIS#<isoTime>#<id>
-  type: 'ANALYSIS';
+  type: "ANALYSIS";
   id: string; // analysis id (ulid)
   userId: string;
   videoUrl: string;
@@ -77,25 +77,26 @@ export interface AnalysisItem {
   requiresFactCheck: boolean;
   createdAt: number;
   // GSIs (some are sparse)
-  GSI4PK?: 'RFC';
+  GSI4PK?: "RFC";
   GSI4SK?: string; // <isoTime>#USER#<userId>#<id>
   GSI5PK?: string; // USER#<userId>
   GSI5SK?: string; // PLATFORM#<platform>#<isoTime>#<id>
   GSI6PK?: string; // CREATOR#<creatorId>#PLATFORM#<platform>
   GSI6SK?: string; // <isoTime>#<id>
-  GSI7PK?: 'ANALYSIS';
+  GSI7PK?: "ANALYSIS";
   GSI7SK?: string; // <isoTime>#<userId>#<id>
 }
 
 export interface CommentItem {
   PK: string; // CREATOR#<creatorId>#PLATFORM#<platform>
   SK: string; // COMMENT#<isoTime>#<id>
-  type: 'COMMENT';
+  type: "COMMENT";
   id: string; // comment id (ulid)
   userId: string; // USER table id
   creatorId: string;
   platform: string;
   content: string;
+  userName?: string;
   createdAt: number;
   updatedAt: number;
   // GSIs
