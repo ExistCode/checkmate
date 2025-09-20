@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getAuthContext } from '@/lib/auth';
 import { deleteAnalysisById, getAnalysisById } from '@/lib/dynamo/repo';
 
