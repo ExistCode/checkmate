@@ -4,13 +4,22 @@ frontend:
     preBuild:
       commands:
         - npm ci
-        # Merge Secrets Manager JSON into .env.production
-        - SECRET_JSON=$(aws secretsmanager get-secret-value --secret-id prod/checkmate/secrets --query SecretString --output text --region ap-southeast-1)
-        - echo "$SECRET_JSON" | jq -r 'to_entries|map("\(.key)=\(.value|tostring)")|.[]' | tee -a .env.production
-        # Also persist selected build envs for SSR runtime per AWS docs
-        - env | grep -E '^(APP_REGION|COGNITO_REGION|COGNITO_USER_POOL_ID|COGNITO_CLIENT_ID|COGNITO_DOMAIN|BEDROCK_MODEL_ID|S3_BUCKET|BETTER_AUTH_SECRET|NEXT_PUBLIC_)' >> .env.production
     build:
       commands:
+        - rm -f .env.production
+        - env | grep -e APP_REGION >> .env.production
+        - env | grep -e COGNITO_REGION >> .env.production
+        - env | grep -e COGNITO_USER_POOL_ID >> .env.production
+        - env | grep -e COGNITO_CLIENT_ID >> .env.production
+        - env | grep -e COGNITO_DOMAIN >> .env.production
+        - env | grep -e NEXT_PUBLIC_COGNITO_CLIENT_ID >> .env.production
+        - env | grep -e NEXT_PUBLIC_COGNITO_DOMAIN >> .env.production
+        - env | grep -e BEDROCK_MODEL_ID >> .env.production
+        - env | grep -e S3_BUCKET >> .env.production
+        - env | grep -e BETTER_AUTH_SECRET >> .env.production
+        - env | grep -e FIRECRAWL_API_KEY >> .env.production
+        - env | grep -e EXA_API_KEY >> .env.production
+        - env | grep -e DDB_TABLE >> .env.production
         - npm run build
   artifacts:
     baseDirectory: .next
