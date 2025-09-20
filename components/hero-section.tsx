@@ -45,6 +45,14 @@ interface FactCheckResult {
   content: string;
   isVerified: boolean;
   error?: string;
+  originTracing?: {
+    hypothesizedOrigin?: string;
+  };
+  beliefDrivers?: Array<{
+    name: string;
+    description: string;
+    references?: Array<{ title: string; url: string }>;
+  }>;
 }
 
 export function HeroSection({ initialUrl = "" }: HeroSectionProps) {
@@ -831,6 +839,45 @@ This is a demonstration of how our AI fact-checking system would analyze the con
                                               </Button>
                                             ))}
                                         </div>
+                                      </div>
+                                    )}
+
+                                  {(
+                                    currentData.factCheck as unknown as FactCheckResult
+                                  ).originTracing?.hypothesizedOrigin && (
+                                    <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+                                      <p className="font-medium mb-2 text-base">Origin:</p>
+                                      <AnalysisRenderer
+                                        content={
+                                          (
+                                            currentData.factCheck as unknown as FactCheckResult
+                                          ).originTracing!.hypothesizedOrigin as string
+                                        }
+                                      />
+                                    </div>
+                                  )}
+
+                                  {(
+                                    currentData.factCheck as unknown as FactCheckResult
+                                  ).beliefDrivers &&
+                                    (
+                                      currentData.factCheck as unknown as FactCheckResult
+                                    ).beliefDrivers!.length > 0 && (
+                                      <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+                                        <p className="font-medium mb-2 text-base">
+                                          Why People Believe This:
+                                        </p>
+                                        <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
+                                          {(
+                                            currentData.factCheck as unknown as FactCheckResult
+                                          ).beliefDrivers!
+                                            .slice(0, 5)
+                                            .map((d, i) => (
+                                              <li key={i}>
+                                                <span className="font-medium">{d.name}:</span> {d.description}
+                                              </li>
+                                            ))}
+                                        </ul>
                                       </div>
                                     )}
 

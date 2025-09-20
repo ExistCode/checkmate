@@ -44,6 +44,17 @@ export interface FactCheckResult {
     credibility: number;
   }>;
   flags: string[];
+  // NEW: provenance and psychology context for transparency
+  originTracing?: {
+    hypothesizedOrigin?: string; // Where the claim likely originated (with citations if possible)
+    firstSeenDates?: Array<{ source: string; date?: string; url?: string }>; // timeline hints
+    propagationPaths?: string[]; // e.g., social platforms, forums, influencers
+  };
+  beliefDrivers?: Array<{
+    name: string; // e.g., confirmation bias, availability heuristic, motivated reasoning
+    description: string; // brief, user-friendly explanation
+    references?: Array<{ title: string; url: string }>; // optional scientific refs
+  }>;
 }
 
 /**
