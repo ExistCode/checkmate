@@ -4,21 +4,18 @@ import { getAuthContext } from "@/lib/auth";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { platform: string; creatorId: string } }
+  context: { params: Promise<{ platform: string; creatorId: string }> }
 ) {
   const { searchParams } = new URL(req.url);
   const limit = Number(searchParams.get("limit") || "50");
-  const items = await listCreatorComments(
-    params.creatorId,
-    params.platform,
-    limit
-  );
+  const { creatorId, platform } = await context.params;
+  const items = await listCreatorComments(creatorId, platform, limit);
   return NextResponse.json(items);
 }
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { platform: string; creatorId: string } }
+  context: { params: Promise<{ platform: string; creatorId: string }> }
 ) {
   const auth = await getAuthContext();
   if (!auth)
@@ -30,10 +27,11 @@ export async function POST(
   const now = Date.now();
   const id =
     globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2);
+  const { creatorId, platform } = await context.params;
   const saved = await addCreatorComment({
     id,
-    creatorId: params.creatorId,
-    platform: params.platform,
+    creatorId,
+    platform,
     userId: auth.userId,
     userName: body?.userName || undefined,
     content,

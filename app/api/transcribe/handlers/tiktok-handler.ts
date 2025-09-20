@@ -547,7 +547,7 @@ Please fact-check the claims from this TikTok video content, paying special atte
           envHints: {
             missingExaApiKey: !process.env.EXA_API_KEY,
             missingBedrockModelId: !process.env.BEDROCK_MODEL_ID,
-            awsRegionConfigured: !!process.env.AWS_REGION,
+            awsRegionConfigured: !!(process.env.APP_REGION || process.env.AWS_REGION),
           },
           contentStats: {
             hasTranscription: !!transcription?.text,

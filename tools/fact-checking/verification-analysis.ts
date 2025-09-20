@@ -30,7 +30,7 @@ export async function analyzeVerificationStatus(
   claim: string,
   searchContent: string
 ): Promise<{ status: string; confidence: number }> {
-  if (!process.env.AWS_REGION) {
+  if (!process.env.APP_REGION && !process.env.AWS_REGION) {
     /**
      * Fallback Analysis: Keyword-Based Assessment
      * When API is unavailable, uses basic keyword matching to determine status.

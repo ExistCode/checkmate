@@ -12,8 +12,9 @@ const PUBLIC_ROUTES = [
 
 const isPublic = (path: string) => PUBLIC_ROUTES.some((p) => path.startsWith(p));
 
+const region = process.env.APP_REGION || process.env.AWS_REGION;
 const jwks = createRemoteJWKSet(new URL(
-  `https://cognito-idp.${process.env.AWS_REGION}.amazonaws.com/${process.env.COGNITO_USER_POOL_ID}/.well-known/jwks.json`
+  `https://cognito-idp.${region}.amazonaws.com/${process.env.COGNITO_USER_POOL_ID}/.well-known/jwks.json`
 ));
 
 export async function middleware(req: Request) {
@@ -31,7 +32,7 @@ export async function middleware(req: Request) {
 
   try {
     const { payload } = await jwtVerify(token, jwks, {
-      issuer: `https://cognito-idp.${process.env.AWS_REGION}.amazonaws.com/${process.env.COGNITO_USER_POOL_ID}`,
+      issuer: `https://cognito-idp.${region}.amazonaws.com/${process.env.COGNITO_USER_POOL_ID}`,
       audience: process.env.COGNITO_CLIENT_ID || process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID,
     });
     const res = NextResponse.next();
