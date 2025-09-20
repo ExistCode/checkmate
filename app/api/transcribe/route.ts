@@ -148,6 +148,29 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
+    // Step 3.5: Validate critical env at runtime to avoid opaque 500s
+    const missingEnv: string[] = [];
+    if (!process.env.APP_REGION) missingEnv.push("APP_REGION");
+    if (!process.env.BEDROCK_MODEL_ID) missingEnv.push("BEDROCK_MODEL_ID");
+    if (missingEnv.length > 0) {
+      logger.warn("Missing required environment variables", {
+        requestId,
+        operation: "env-check",
+        metadata: { missingEnv },
+      });
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "MISSING_ENV",
+            message: `Missing required environment variables: ${missingEnv.join(", ")}`,
+            context: { missingEnv },
+          },
+        },
+        { status: 500 }
+      );
+    }
+
     // Step 4: Create processing context
     const context: ProcessingContext = {
       requestId,
