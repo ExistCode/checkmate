@@ -19,10 +19,10 @@ export async function transcribeVideoDirectly(videoUrl: string) {
     }
 
     // Ensure AWS env is configured
-    if (!config.AWS_REGION || !config.S3_BUCKET) {
+    if (!config.APP_REGION || !config.S3_BUCKET) {
       return {
         success: false,
-        error: "AWS_REGION and S3_BUCKET must be configured for transcription",
+        error: "APP_REGION and S3_BUCKET must be configured for transcription",
       };
     }
 

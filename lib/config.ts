@@ -5,9 +5,9 @@ const configSchema = z.object({
   // API Keys
   FIRECRAWL_API_KEY: z.string().min(1, "Firecrawl API key is required"),
   // AWS / Bedrock
-  AWS_REGION: z
+  APP_REGION: z
     .string()
-    .min(1, "AWS region (AWS_REGION) is required for Bedrock"),
+    .min(1, "AWS region (APP_REGION) is required for Bedrock"),
   BEDROCK_MODEL_ID: z
     .string()
     .default("anthropic.claude-3-haiku-20240307-v1:0"),

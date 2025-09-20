@@ -1,4 +1,4 @@
-import { bedrock } from "@ai-sdk/amazon-bedrock";
+import { createAmazonBedrock } from "@ai-sdk/amazon-bedrock";
 
 // Centralized AI model helpers for Bedrock
 
@@ -8,6 +8,18 @@ if (!process.env.BEDROCK_MODEL_ID) {
 }
 
 export const defaultTextModelId = process.env.BEDROCK_MODEL_ID;
+
+// Map APP_REGION -> AWS_REGION for SDKs that only read AWS_* envs
+if (process.env.APP_REGION) {
+  if (!process.env.AWS_REGION) process.env.AWS_REGION = process.env.APP_REGION;
+  if (!process.env.AWS_DEFAULT_REGION)
+    process.env.AWS_DEFAULT_REGION = process.env.APP_REGION;
+}
+
+// Initialize Bedrock provider with explicit region from APP_REGION
+const bedrock = createAmazonBedrock({
+  region: process.env.APP_REGION as string,
+});
 
 // Factory for the text-generation model used across the app
 export function textModel(modelId?: string) {
