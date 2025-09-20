@@ -29,7 +29,7 @@ import { textModel, DEFAULT_SCORE_MAX_TOKENS, DEFAULT_SCORE_TEMPERATURE } from "
 export async function evaluateDomainCredibility(
   domain: string
 ): Promise<number> {
-  if (!process.env.AWS_REGION) {
+  if (!process.env.APP_REGION) {
     /**
      * Fallback Credibility Assessment
      * When API is unavailable, uses domain-based heuristics to assign scores.
