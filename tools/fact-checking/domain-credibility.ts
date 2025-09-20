@@ -1,5 +1,5 @@
 import { generateText } from "ai";
-import { openai } from "@ai-sdk/openai";
+import { textModel, DEFAULT_SCORE_MAX_TOKENS, DEFAULT_SCORE_TEMPERATURE } from "../../lib/ai";
 
 /**
  * Evaluates domain credibility using AI analysis on a scale of 1-10.
@@ -29,7 +29,7 @@ import { openai } from "@ai-sdk/openai";
 export async function evaluateDomainCredibility(
   domain: string
 ): Promise<number> {
-  if (!process.env.OPENAI_API_KEY) {
+  if (!process.env.AWS_REGION) {
     /**
      * Fallback Credibility Assessment
      * When API is unavailable, uses domain-based heuristics to assign scores.
@@ -77,10 +77,10 @@ export async function evaluateDomainCredibility(
     Respond with ONLY a single number from 1-10.`;
 
     const { text: scoreText } = await generateText({
-      model: openai("gpt-4o-mini"),
+      model: textModel(),
       prompt: prompt,
-      maxTokens: 10,
-      temperature: 0.1,
+      maxTokens: DEFAULT_SCORE_MAX_TOKENS,
+      temperature: DEFAULT_SCORE_TEMPERATURE,
     });
 
     /**

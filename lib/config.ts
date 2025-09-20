@@ -3,8 +3,21 @@ import { z } from "zod";
 // Environment configuration schema
 const configSchema = z.object({
   // API Keys
-  OPENAI_API_KEY: z.string().min(1, "OpenAI API key is required"),
   FIRECRAWL_API_KEY: z.string().min(1, "Firecrawl API key is required"),
+  // AWS / Bedrock
+  AWS_REGION: z.string().min(1, "AWS region (AWS_REGION) is required for Bedrock"),
+  BEDROCK_MODEL_ID: z
+    .string()
+    .default("anthropic.claude-3-haiku-20240307-v1:0"),
+  // DynamoDB (optional during migration)
+  DDB_TABLE_ANALYSES: z.string().optional(),
+  DDB_TABLE_CREATORS: z.string().optional(),
+  DDB_TABLE_USERS: z.string().optional(),
+  DDB_TABLE_COMMENTS: z.string().optional(),
+  // Cognito (optional during migration)
+  COGNITO_USER_POOL_ID: z.string().optional(),
+  COGNITO_CLIENT_ID: z.string().optional(),
+  COGNITO_DOMAIN: z.string().optional(),
 
   // Clerk Authentication
   CLERK_SECRET_KEY: z.string().min(1, "Clerk secret key is required"),
@@ -35,6 +48,11 @@ const configSchema = z.object({
   ENABLE_DETAILED_LOGGING: z.coerce.boolean().default(false),
   ENABLE_CACHE: z.coerce.boolean().default(true),
   ENABLE_MONITORING: z.coerce.boolean().default(true),
+
+  // Storage / Media
+  S3_BUCKET: z
+    .string()
+    .min(1, "S3 bucket (S3_BUCKET) is required for transcription media"),
 });
 
 // Parse and validate environment variables

@@ -1,6 +1,8 @@
-import { experimental_transcribe } from "ai";
-import { openai } from "@ai-sdk/openai";
 import FirecrawlApp from "@mendable/firecrawl-js";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { StartTranscriptionJobCommand, GetTranscriptionJobCommand } from "@aws-sdk/client-transcribe";
+import { config } from "../lib/config";
+import { s3, transcribe } from "../lib/aws";
 
 /**
  * Helper function to transcribe a video directly from a given URL using OpenAI Whisper.
@@ -16,11 +18,11 @@ export async function transcribeVideoDirectly(videoUrl: string) {
       };
     }
 
-    // Check if OpenAI API key is available
-    if (!process.env.OPENAI_API_KEY) {
+    // Ensure AWS env is configured
+    if (!config.AWS_REGION || !config.S3_BUCKET) {
       return {
         success: false,
-        error: "OpenAI API key not configured",
+        error: "AWS_REGION and S3_BUCKET must be configured for transcription",
       };
     }
 
@@ -37,20 +39,76 @@ export async function transcribeVideoDirectly(videoUrl: string) {
     const videoArrayBuffer = await videoResponse.arrayBuffer();
     const videoBuffer = Buffer.from(videoArrayBuffer);
 
-    // Use AI SDK's experimental transcribe function
-    const transcription = await experimental_transcribe({
-      model: openai.transcription("whisper-1"),
-      audio: videoBuffer,
-    });
+    // Upload media to S3 for Transcribe
+    const key = `uploads/transcribe/${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2, 8)}.mp4`;
 
-    // Return the transcription results
+    const contentType = videoResponse.headers.get("content-type") ||
+      "application/octet-stream";
+
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: config.S3_BUCKET,
+        Key: key,
+        Body: videoBuffer,
+        ContentType: contentType,
+      })
+    );
+
+    // Start Transcribe job
+    const jobName = `job-${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2, 6)}`;
+
+    await transcribe.send(
+      new StartTranscriptionJobCommand({
+        TranscriptionJobName: jobName,
+        LanguageCode: "en-US",
+        Media: { MediaFileUri: `s3://${config.S3_BUCKET}/${key}` },
+        OutputBucketName: config.S3_BUCKET,
+      })
+    );
+
+    // Poll until job completes or times out
+    const start = Date.now();
+    const timeoutMs = config.TRANSCRIPTION_TIMEOUT_MS;
+    let transcriptUri: string | undefined;
+    let language = "en-US";
+    while (Date.now() - start < timeoutMs) {
+      const resp = await transcribe.send(
+        new GetTranscriptionJobCommand({ TranscriptionJobName: jobName })
+      );
+      const job = resp.TranscriptionJob;
+      if (!job) break;
+      if (job.TranscriptionJobStatus === "COMPLETED") {
+        transcriptUri = job.Transcript?.TranscriptFileUri;
+        // @ts-ignore - languageCode may be in settings
+        language = (job?.LanguageCode as string) || language;
+        break;
+      }
+      if (job.TranscriptionJobStatus === "FAILED") {
+        return { success: false, error: job.FailureReason || "Transcription failed" };
+      }
+      await new Promise((r) => setTimeout(r, 5000));
+    }
+
+    if (!transcriptUri) {
+      return { success: false, error: "Transcription timed out" };
+    }
+
+    // Fetch transcript JSON
+    const trRes = await fetch(transcriptUri);
+    if (!trRes.ok) {
+      return { success: false, error: "Failed to fetch transcript" };
+    }
+    const trJson = await trRes.json();
+    const text = trJson?.results?.transcripts?.[0]?.transcript || "";
+    const segments = trJson?.results?.items || [];
+
     return {
       success: true,
-      data: {
-        text: transcription.text,
-        segments: transcription.segments || [],
-        language: transcription.language,
-      },
+      data: { text, segments, language },
     };
   } catch (error) {
     return {
