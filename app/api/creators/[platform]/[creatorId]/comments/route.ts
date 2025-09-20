@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { addCreatorComment, listCreatorComments } from "@/lib/dynamo/repo";
 import { getAuthContext } from "@/lib/auth";
 
 export async function GET(
-  req: Request,
-  { params }: any
+  req: NextRequest,
+  { params }: { params: { platform: string; creatorId: string } }
 ) {
   const { searchParams } = new URL(req.url);
   const limit = Number(searchParams.get("limit") || "50");
@@ -17,8 +17,8 @@ export async function GET(
 }
 
 export async function POST(
-  req: Request,
-  { params }: any
+  req: NextRequest,
+  { params }: { params: { platform: string; creatorId: string } }
 ) {
   const auth = await getAuthContext();
   if (!auth)
