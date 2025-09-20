@@ -27,10 +27,11 @@ frontend:
         - env | grep -e NEXT_PUBLIC_ | sort
         - npm run build
   artifacts:
-    baseDirectory: .next
-    files:
-      - '**/*'
-  cache:
-    paths:
-      - node_modules/**/*
-      - .next/cache/**/*
+        baseDirectory: dist/apps/app/.next
+        files:
+          - '**/*'
+      cache:
+        paths:
+          - node_modules/**/*
+      buildPath: /
+    appRoot: apps/app
