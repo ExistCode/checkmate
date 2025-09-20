@@ -24,7 +24,8 @@ import {
   gsi9AnalysisById,
 } from "./keys";
 
-const TABLE = process.env.DDB_TABLE as string;
+const TABLE = (process.env.DDB_TABLE || process.env.DDB_TABLE_ANALYSES) as string;
+if (!TABLE) throw new Error("DynamoDB table name is not configured. Set DDB_TABLE or DDB_TABLE_ANALYSES.");
 
 // Builders — construct fully-formed items matching the single-table schema
 export const buildUserItem = (
