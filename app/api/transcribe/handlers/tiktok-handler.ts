@@ -421,7 +421,9 @@ export class TikTokHandler extends BaseHandler {
 
 ${transcription ? `Transcribed Content: "${transcription.text}"` : ""}
 
-Please fact-check the claims from this TikTok video content, paying special attention to both the video text${transcription ? " and the transcribed speech" : ""}. Consider the context that this is social media content that may contain opinions, personal experiences, or claims that need verification.`;
+Please fact-check the claims from this TikTok video content, paying special attention to both the video text${
+        transcription ? " and the transcribed speech" : ""
+      }. Consider the context that this is social media content that may contain opinions, personal experiences, or claims that need verification.`;
 
       const factCheck = await researchAndFactCheck.execute(
         {
@@ -477,7 +479,19 @@ Please fact-check the claims from this TikTok video content, paying special atte
         requestId: context.requestId,
         platform: this.platform,
         operation: "fact-check",
-        metadata: { success: factCheck.success },
+        metadata: {
+          success: factCheck.success,
+          toolError: (factCheck as any)?.error || undefined,
+          envHints: {
+            missingExaApiKey: !process.env.EXA_API_KEY,
+            missingBedrockModelId: !process.env.BEDROCK_MODEL_ID,
+            awsRegionConfigured: !!process.env.AWS_REGION,
+          },
+          contentStats: {
+            hasTranscription: !!transcription?.text,
+            descriptionLength: (extractedData as any)?.description?.length || 0,
+          },
+        },
       });
 
       // Return fallback result

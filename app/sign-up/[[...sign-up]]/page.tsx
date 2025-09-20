@@ -2,14 +2,11 @@
 
 import { SearchCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { authClient } from "@/lib/better-auth-client";
 
 export default function Page() {
-  const domain = process.env.NEXT_PUBLIC_COGNITO_DOMAIN!;
-  const clientId = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID!;
-  const goSignUp = () => {
-    const redirect = encodeURIComponent(`${window.location.origin}/auth/callback`);
-    const url = `https://${domain}/signup?client_id=${clientId}&response_type=token&redirect_uri=${redirect}&scope=openid+email+profile`;
-    window.location.href = url;
+  const goSignUp = async () => {
+    await authClient.signIn.social({ provider: "cognito" });
   };
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">

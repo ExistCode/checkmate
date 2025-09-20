@@ -8,6 +8,7 @@ import { useLanguage } from "@/components/language-provider";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useCognitoAuth } from "@/lib/cognito/client";
+import { authClient } from "@/lib/better-auth-client";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import React from "react";
@@ -160,33 +161,43 @@ export function Header() {
 function AuthButtons({ onClickDone, mobile }: { onClickDone?: () => void; mobile?: boolean }) {
   const { t } = useLanguage();
   const { isSignedIn, user } = useCognitoAuth();
-  const domain = process.env.NEXT_PUBLIC_COGNITO_DOMAIN!;
-  const clientId = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID!;
 
-  const goSignIn = () => {
-    const redirect = encodeURIComponent(`${window.location.origin}/auth/callback`);
-    const url = `https://${domain}/oauth2/authorize?client_id=${clientId}&response_type=token&redirect_uri=${redirect}&scope=openid+email+profile`;
-    window.location.href = url;
+  const goSignIn = async () => {
+    await authClient.signIn.social({ provider: "cognito" });
   };
-  const goSignOut = () => {
-    const redirect = encodeURIComponent(`${window.location.origin}`);
-    const url = `https://${domain}/logout?client_id=${clientId}&logout_uri=${redirect}`;
-    window.location.href = url;
+  const goSignUp = async () => {
+    await authClient.signIn.social({ provider: "cognito" });
+  };
+  const goSignOut = async () => {
+    await authClient.signOut();
   };
 
   if (!isSignedIn) {
     return (
-      <Button
-        variant="default"
-        size="sm"
-        className=" justify-start"
-        onClick={() => {
-          goSignIn();
-          onClickDone?.();
-        }}
-      >
-        {t.signIn}
-      </Button>
+      <div className="flex items-center gap-2">
+        <Button
+          variant="default"
+          size="sm"
+          className=" justify-start"
+          onClick={() => {
+            goSignIn();
+            onClickDone?.();
+          }}
+        >
+          {t.signIn}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className=" justify-start"
+          onClick={() => {
+            goSignUp();
+            onClickDone?.();
+          }}
+        >
+          Create account
+        </Button>
+      </div>
     );
   }
 
