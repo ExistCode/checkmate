@@ -3,7 +3,7 @@ frontend:
   phases:
     preBuild:
       commands:
-        - npm ci
+        - npm ci --include=dev
         - SECRET_JSON=$(aws secretsmanager get-secret-value --secret-id prod/checkmate/secrets --query SecretString --output text --region ap-southeast-1)
         - echo "$SECRET_JSON" | jq -r 'to_entries|map("\(.key)=\(.value|tostring)")|.[]' | tee -a .env.production
     build:
