@@ -32,7 +32,7 @@ export async function middleware(req: Request) {
   try {
     const { payload } = await jwtVerify(token, jwks, {
       issuer: `https://cognito-idp.${process.env.AWS_REGION}.amazonaws.com/${process.env.COGNITO_USER_POOL_ID}`,
-      audience: process.env.COGNITO_CLIENT_ID,
+      audience: process.env.COGNITO_CLIENT_ID || process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID,
     });
     const res = NextResponse.next();
     res.headers.set('x-auth-provider', 'cognito');

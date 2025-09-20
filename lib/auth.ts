@@ -22,7 +22,8 @@ export async function getAuthContext(): Promise<AuthContext | null> {
 
   const region = process.env.AWS_REGION;
   const poolId = process.env.COGNITO_USER_POOL_ID;
-  const clientId = process.env.COGNITO_CLIENT_ID;
+  const clientId =
+    process.env.COGNITO_CLIENT_ID || process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID;
   if (!region || !poolId || !clientId) return null;
 
   try {

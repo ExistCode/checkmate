@@ -4,11 +4,21 @@ import { SearchCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function Page() {
-  const domain = process.env.NEXT_PUBLIC_COGNITO_DOMAIN!;
+  // Normalize domain from env: remove protocol (even if colon missing), strip paths, and trailing slashes
+  const rawDomain = process.env.NEXT_PUBLIC_COGNITO_DOMAIN!;
+  const domain = rawDomain
+    .trim()
+    .replace(/^https?:?\/\//i, "")
+    .split("/")[0]
+    .replace(/\/+$/g, "");
   const clientId = process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID!;
   const goSignIn = () => {
-    const redirect = encodeURIComponent(`${window.location.origin}/auth/callback`);
-    const url = `https://${domain}/oauth2/authorize?client_id=${clientId}&response_type=token&redirect_uri=${redirect}&scope=openid+email+profile`;
+    const redirect = encodeURIComponent(
+      `${window.location.origin}/auth/callback`
+    );
+    const url = `https://${domain}/oauth2/authorize?client_id=${encodeURIComponent(
+      clientId
+    )}&response_type=token&redirect_uri=${redirect}&scope=openid+email+profile`;
     window.location.href = url;
   };
   return (

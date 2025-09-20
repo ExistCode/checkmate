@@ -13,6 +13,7 @@ import { AlertTriangle, ExternalLink } from "lucide-react";
 import { useLanguage } from "@/components/language-provider";
 import { CreatorSummary, CreatorAnalyses } from "@/components/creator";
 import { LoadingSpinner, EmptyState } from "@/components/analysis";
+import { useState, useEffect } from "react";
 
 /**
  * Props for the CreatorPageContent component
@@ -40,8 +41,8 @@ export const CreatorPageContent = ({ className }: CreatorPageContentProps) => {
   const platform = searchParams.get("platform") || "tiktok";
 
   // Fetch creator data from DDB-backed API
-  const [creator, setCreator] = React.useState<any | undefined>(undefined);
-  React.useEffect(() => {
+  const [creator, setCreator] = useState<any | undefined>(undefined);
+useEffect(() => {
     setCreator(undefined);
     fetch(
       `/api/creators/${encodeURIComponent(platform)}/${encodeURIComponent(creatorId)}`
