@@ -4,11 +4,8 @@ frontend:
     preBuild:
       commands:
         - npm ci
-        # Merge Secrets Manager JSON into .env.production
         - SECRET_JSON=$(aws secretsmanager get-secret-value --secret-id prod/checkmate/secrets --query SecretString --output text --region ap-southeast-1)
         - echo "$SECRET_JSON" | jq -r 'to_entries|map("\(.key)=\(.value|tostring)")|.[]' | tee -a .env.production
-        # Also persist selected build envs for SSR runtime per AWS docs
-        - env | grep -E '^(APP_REGION|COGNITO_REGION|COGNITO_USER_POOL_ID|COGNITO_CLIENT_ID|COGNITO_DOMAIN|BEDROCK_MODEL_ID|S3_BUCKET|BETTER_AUTH_SECRET|NEXT_PUBLIC_)' >> .env.production
     build:
       commands:
         - npm run build
