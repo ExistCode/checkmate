@@ -7,6 +7,12 @@ if (!process.env.BEDROCK_MODEL_ID) {
   throw new Error("BEDROCK_MODEL_ID is not set");
 }
 
+if (process.env.APP_ACCESS_KEY_ID && !process.env.AWS_ACCESS_KEY_ID) {
+  process.env.AWS_ACCESS_KEY_ID = process.env.APP_ACCESS_KEY_ID;
+}
+if (process.env.APP_SECRET_ACCESS_KEY && !process.env.AWS_SECRET_ACCESS_KEY) {
+  process.env.AWS_SECRET_ACCESS_KEY = process.env.APP_SECRET_ACCESS_KEY;
+}
 export const defaultTextModelId = process.env.BEDROCK_MODEL_ID;
 
 // Factory for the text-generation model used across the app
