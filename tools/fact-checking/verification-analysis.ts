@@ -1,5 +1,5 @@
 import { generateText } from "ai";
-import { openai } from "@ai-sdk/openai";
+import { textModel, DEFAULT_CLASSIFY_MAX_TOKENS, DEFAULT_CLASSIFY_TEMPERATURE } from "../../lib/ai";
 
 /**
  * Analyzes verification status and confidence using LLM with comprehensive fact-check analysis.
@@ -30,7 +30,7 @@ export async function analyzeVerificationStatus(
   claim: string,
   searchContent: string
 ): Promise<{ status: string; confidence: number }> {
-  if (!process.env.OPENAI_API_KEY) {
+  if (!process.env.AWS_REGION) {
     /**
      * Fallback Analysis: Keyword-Based Assessment
      * When API is unavailable, uses basic keyword matching to determine status.
@@ -82,10 +82,10 @@ Respond in this exact JSON format:
 {"status": "status_here", "confidence": 0.0}`;
 
     const { text: responseText } = await generateText({
-      model: openai("gpt-4o-mini"),
+      model: textModel(),
       prompt: prompt,
-      maxTokens: 100,
-      temperature: 0.1,
+      maxTokens: DEFAULT_CLASSIFY_MAX_TOKENS,
+      temperature: DEFAULT_CLASSIFY_TEMPERATURE,
     });
 
     try {

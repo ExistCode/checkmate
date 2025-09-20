@@ -1,6 +1,6 @@
 import { tool, generateText } from "ai";
 import { z } from "zod";
-import { openai } from "@ai-sdk/openai";
+import { textModel, DEFAULT_QUERY_MAX_TOKENS, DEFAULT_QUERY_TEMPERATURE, DEFAULT_ANALYSIS_MAX_TOKENS, DEFAULT_ANALYSIS_TEMPERATURE } from "../../lib/ai";
 import { evaluateDomainCredibility } from "./domain-credibility";
 import { analyzeVerificationStatus } from "./verification-analysis";
 
@@ -55,7 +55,7 @@ interface ExaContentResult {
  * 5. Determining overall truthfulness and confidence
  *
  * @requires EXA_API_KEY environment variable
- * @requires OPENAI_API_KEY environment variable
+ * @requires AWS_REGION environment variable (for Bedrock)
  *
  * @example
  * ```typescript
@@ -90,12 +90,7 @@ export const researchAndFactCheck = tool({
       };
     }
 
-    if (!process.env.OPENAI_API_KEY) {
-      return {
-        success: false,
-        error: "OpenAI API key not configured",
-      };
-    }
+    // Model configuration is centralized in lib/ai.ts (throws if misconfigured)
 
     try {
       /**
@@ -119,12 +114,12 @@ Create a focused search query (max 50 words) that will help find:
 Return only the search query, nothing else.`;
 
       const { text: searchQuery } = await generateText({
-        model: openai("gpt-4o-mini"),
+        model: textModel(),
         system:
           "You are an expert at creating search queries for fact-checking. Create concise, effective search queries that will find the most relevant and credible sources.",
         prompt: searchQueryPrompt,
-        maxTokens: 100,
-        temperature: 0.3,
+        maxTokens: DEFAULT_QUERY_MAX_TOKENS,
+        temperature: DEFAULT_QUERY_TEMPERATURE,
       });
 
       /**
@@ -311,12 +306,12 @@ Format your response clearly with sections for:
 - Reasoning`;
 
         const { text } = await generateText({
-          model: openai("gpt-4o-mini"),
+          model: textModel(),
           system:
             "You are an expert fact-checker who analyzes content against credible sources to determine truthfulness and accuracy.",
           prompt: factCheckPrompt,
-          maxTokens: 2000,
-          temperature: 0.1,
+          maxTokens: DEFAULT_ANALYSIS_MAX_TOKENS,
+          temperature: DEFAULT_ANALYSIS_TEMPERATURE,
         });
 
         factCheckAnalysis = text;
