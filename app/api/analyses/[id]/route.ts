@@ -2,13 +2,14 @@ import { NextResponse } from 'next/server';
 import { getAuthContext } from '@/lib/auth';
 import { deleteAnalysisById, getAnalysisById } from '@/lib/dynamo/repo';
 
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(_req: Request, { params }: any) {
   const item = await getAnalysisById(params.id);
   if (!item) return NextResponse.json(null);
   return NextResponse.json(item);
 }
 
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+
+export async function DELETE(_req: Request, { params }: any) {
   const auth = await getAuthContext();
   if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   const item = await getAnalysisById(params.id);

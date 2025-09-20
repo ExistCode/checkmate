@@ -8,6 +8,7 @@ const PUBLIC_ROUTES = [
   '/auth/callback',
   '/api/transcribe',
   '/api/analyze-tiktok',
+  '/api/diagnostics',
 ];
 
 const isPublic = (path: string) => PUBLIC_ROUTES.some((p) => path.startsWith(p));

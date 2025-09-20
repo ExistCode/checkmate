@@ -1,0 +1,15 @@
+version: 1
+frontend:
+  phases:
+    preBuild:
+      commands:
+        - npm ci --include=dev
+        - SECRET_JSON=$(aws secretsmanager get-secret-value --secret-id prod/checkmate/secrets --query SecretString --output text --region ap-southeast-1)
+        - echo "$SECRET_JSON" | jq -r 'to_entries|map("\(.key)=\(.value|tostring)")|.[]' | tee -a .env.production
+    build:
+      commands:
+        - npm run build
+  artifacts:
+    baseDirectory: .next
+    files:
+      - '**/*'

@@ -95,6 +95,23 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const sanitizedUrl = sanitizeUrl(rawUrl);
     const platform = detectPlatform(sanitizedUrl);
+    logger.debug("Env snapshot", {
+      requestId,
+      operation: "env-check",
+      metadata: {
+        APP_REGION: Boolean(process.env.APP_REGION),
+        COGNITO_REGION: Boolean(process.env.COGNITO_REGION),
+        BEDROCK_MODEL_ID: Boolean(process.env.BEDROCK_MODEL_ID),
+        S3_BUCKET: Boolean(process.env.S3_BUCKET),
+        COGNITO_USER_POOL_ID: Boolean(process.env.COGNITO_USER_POOL_ID),
+        COGNITO_CLIENT_ID: Boolean(
+          process.env.COGNITO_CLIENT_ID || process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID
+        ),
+        COGNITO_DOMAIN: Boolean(
+          process.env.COGNITO_DOMAIN || process.env.NEXT_PUBLIC_COGNITO_DOMAIN
+        ),
+      },
+    });
 
     logger.info("Platform detected and URL sanitized", {
       requestId,
@@ -128,6 +145,29 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             "Retry-After": rateLimitResult.retryAfter?.toString() || "60",
           },
         }
+      );
+    }
+
+    // Step 3.5: Validate critical env at runtime to avoid opaque 500s
+    const missingEnv: string[] = [];
+    if (!process.env.APP_REGION) missingEnv.push("APP_REGION");
+    if (!process.env.BEDROCK_MODEL_ID) missingEnv.push("BEDROCK_MODEL_ID");
+    if (missingEnv.length > 0) {
+      logger.warn("Missing required environment variables", {
+        requestId,
+        operation: "env-check",
+        metadata: { missingEnv },
+      });
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "MISSING_ENV",
+            message: `Missing required environment variables: ${missingEnv.join(", ")}`,
+            context: { missingEnv },
+          },
+        },
+        { status: 500 }
       );
     }
 
