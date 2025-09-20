@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import {
   getCreator,
   listAnalysesByCreator,
@@ -8,8 +8,8 @@ import {
 import { getAuthContext } from "@/lib/auth";
 
 export async function GET(
-  _req: NextRequest,
-  { params }: { params: { platform: string; creatorId: string } }
+  _req: Request,
+  { params }: any
 ) {
   const item = await getCreator(params.creatorId, params.platform);
   if (!item) return NextResponse.json(null);
@@ -18,8 +18,8 @@ export async function GET(
 
 // List analyses for creator
 export async function POST(
-  req: NextRequest,
-  { params }: { params: { platform: string; creatorId: string } }
+  req: Request,
+  { params }: any
 ) {
   const { action } = await req.json().catch(() => ({ action: undefined }));
   if (action === "listAnalyses") {
@@ -36,8 +36,8 @@ export async function POST(
 
 // Comments subroutes
 export async function PUT(
-  req: NextRequest,
-  { params }: { params: { platform: string; creatorId: string } }
+  req: Request,
+  { params }: any
 ) {
   const auth = await getAuthContext();
   if (!auth)
@@ -62,8 +62,8 @@ export async function PUT(
 }
 
 export async function PATCH(
-  req: NextRequest,
-  { params }: { params: { platform: string; creatorId: string } }
+  req: Request,
+  { params }: any
 ) {
   // List comments (PATCH chosen to avoid GET body; could be GET with query too)
   const { limit } = (await req.json().catch(() => ({}))) as any;
