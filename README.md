@@ -93,12 +93,13 @@ VERCEL_URL=http://localhost:3000
 OPENAI_API_KEY=sk-proj-FAKEKEYFORDEMO0987654321
 CONVEX_DEPLOYMENT=dev:tidy-grouse-158 # team: mohtasham-murshid, project: checkmate-29f39
 NEXT_PUBLIC_CONVEX_URL=https://tidy-grouse-158.convex.cloud
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_FAKEPUBLISHABLEKEY
-CLERK_SECRET_KEY=sk_test_FAKESECRETKEY
-NEXT_PUBLIC_CLERK_FRONTEND_API_URL=https://magical-marmot-34.clerk.accounts.dev
-NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
-NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL=/news
-NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL=/news
+AWS_REGION=us-east-1
+COGNITO_USER_POOL_ID=us-east-1_example
+COGNITO_CLIENT_ID=exampleclientid123456789
+COGNITO_CLIENT_SECRET=exampleclientsecret123456789
+COGNITO_DOMAIN=https://your-domain.auth.us-east-1.amazoncognito.com
+COGNITO_REDIRECT_URI=http://localhost:3000/api/auth/callback
+COGNITO_LOGOUT_REDIRECT_URI=http://localhost:3000
 FIRECRAWL_API_KEY=fc-FAKEKEYFORDEMO0987654321
 ```
 
@@ -119,7 +120,7 @@ FIRECRAWL_API_KEY=fc-FAKEKEYFORDEMO0987654321
 ### Backend & Database
 
 - **Convex** - Real-time backend-as-a-service
-- **Clerk** - Authentication and user management
+- ****Amazon Cognito**** - Authentication and user management
 - **PostgreSQL** - Structured data storage (via Convex)
 - **Serverless Functions** - Auto-scaling API endpoints
 
@@ -258,7 +259,7 @@ Our data model consists of four main entities:
 
 #### `users`
 
-- Synchronized from Clerk authentication
+- Synchronized from Cognito authentication
 - Stores user profile information and preferences
 
 #### `contentCreators`
@@ -426,7 +427,7 @@ components/
 
 #### Authentication & Authorization
 
-- **Clerk Integration**: Secure user authentication with social logins
+- ****Cognito Integration****: Secure user authentication with social logins
 - **Middleware Protection**: Route-level authentication enforcement
 - **API Security**: Request validation and rate limiting
 

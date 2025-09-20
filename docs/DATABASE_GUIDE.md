@@ -19,7 +19,7 @@ The schema is defined in `convex/schema.ts` and includes four main tables:
 
 ```typescript
 // Core tables
-users; // User accounts (synced from Clerk)
+users; // User accounts (synced from Cognito)
 contentCreators; // Content creator credibility tracking
 tiktokAnalyses; // Analysis results for TikTok videos
 creatorComments; // User comments about creators
@@ -27,11 +27,11 @@ creatorComments; // User comments about creators
 
 ### 1. Users Table
 
-**Purpose:** Stores user account information synced from Clerk authentication.
+**Purpose:** Stores user account information synced from Cognito authentication.
 
 ```typescript
 users: {
-  clerkId: string,           // Unique Clerk user identifier
+  cognitoId: string,           // Unique Cognito user identifier
   email: string,             // User email address
   firstName?: string,        // User's first name
   lastName?: string,         // User's last name
@@ -44,7 +44,7 @@ users: {
 
 **Indexes:**
 
-- `by_clerk_id` - For looking up users by Clerk ID
+- `by_Cognito_id` - For looking up users by Cognito ID
 
 **Usage Example:**
 
@@ -52,7 +52,7 @@ users: {
 // Get current user
 const user = await ctx.db
   .query("users")
-  .withIndex("by_clerk_id", (q) => q.eq("clerkId", clerkId))
+  .withIndex("by_Cognito_id", (q) => q.eq("cognitoId", cognitoId))
   .unique();
 ```
 
@@ -263,10 +263,10 @@ export const createAnalysis = mutation({
 // Get single document by ID
 const analysis = await ctx.db.get(analysisId);
 
-// Get user by Clerk ID
+// Get user by Cognito ID
 const user = await ctx.db
   .query("users")
-  .withIndex("by_clerk_id", (q) => q.eq("clerkId", clerkId))
+  .withIndex("by_Cognito_id", (q) => q.eq("cognitoId", cognitoId))
   .unique();
 ```
 
@@ -394,7 +394,7 @@ if (analysis && analysis.userId === currentUserId) {
 
 ### User Authentication
 
-Convex integrates with Clerk for authentication:
+Convex integrates with Cognito for authentication:
 
 ```typescript
 export const protectedMutation = mutation({
@@ -407,7 +407,7 @@ export const protectedMutation = mutation({
       throw new Error("Authentication required");
     }
 
-    // identity.subject contains the Clerk user ID
+    // identity.subject contains the Cognito user ID
     const user = await getCurrentUser(ctx, identity.subject);
     // ... protected operation
   },

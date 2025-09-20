@@ -15,35 +15,21 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useState } from "react";
 import { useLanguage } from "@/components/language-provider";
-import { useUser } from "@clerk/nextjs";
+import { useAuth } from "@/components/auth/auth-context";
 
-/**
- * Props for the CreatorComments component
- */
 interface CreatorCommentsProps {
-  /** Creator ID for the comments */
   creatorId: string;
-  /** Platform of the creator */
   platform: string;
-  /** Optional CSS class name */
   className?: string;
 }
 
-/**
- * CreatorComments component handles comment functionality for creator pages
- *
- * @example
- * ```tsx
- * <CreatorComments creatorId="creator123" platform="tiktok" />
- * ```
- */
 export const CreatorComments = ({
   creatorId,
   platform,
   className,
 }: CreatorCommentsProps) => {
   const { t } = useLanguage();
-  const { user } = useUser();
+  const { user } = useAuth();
   const [newComment, setNewComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -54,9 +40,6 @@ export const CreatorComments = ({
 
   const submitComment = useMutation(api.users.addCreatorComment);
 
-  /**
-   * Handles comment submission
-   */
   const handleSubmitComment = async () => {
     if (!newComment.trim() || !user || isSubmitting) return;
 
@@ -67,7 +50,7 @@ export const CreatorComments = ({
         platform,
         comment: newComment.trim(),
         userId: user.id,
-        userName: user.firstName || user.username || "Anonymous",
+        userName: user.firstName || user.username || t.anonymous,
       });
       setNewComment("");
     } catch (error) {
@@ -86,7 +69,6 @@ export const CreatorComments = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Comment Input */}
         {user && (
           <div className="space-y-3">
             <Textarea
@@ -106,10 +88,8 @@ export const CreatorComments = ({
           </div>
         )}
 
-        {/* Comments List */}
         <div className="space-y-4">
           {comments === undefined ? (
-            // Loading state
             <div className="space-y-4">
               {Array.from({ length: 3 }).map((_, i) => (
                 <div key={i} className="flex gap-3 animate-pulse">

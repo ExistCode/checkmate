@@ -26,13 +26,12 @@ export function Header() {
     return source.charAt(0).toUpperCase();
   }, [user, t.anonymous]);
 
-  // Inline LanguageToggle for mobile
   const MobileLanguageToggle = () => {
     const { language, setLanguage, t } = useLanguage();
     const languages = [
-      { code: "en" as const, label: t.english, flag: "🇬🇧" },
-      { code: "ms" as const, label: t.malay, flag: "🇲🇾" },
-      { code: "zh" as const, label: t.chinese, flag: "🇨🇳" },
+      { code: "en" as const, label: t.english, flag: "EN" },
+      { code: "ms" as const, label: t.malay, flag: "MS" },
+      { code: "zh" as const, label: t.chinese, flag: "ZH" },
     ];
     return (
       <div className="w-full">
@@ -43,7 +42,7 @@ export function Header() {
           asChild
         >
           <div>
-            <span className="inline-block mr-2 align-middle">🌐</span>
+            <span className="inline-block mr-2 align-middle">Lang</span>
             <span className="align-middle mr-2">{t.language}</span>
             <select
               value={language}
@@ -64,7 +63,6 @@ export function Header() {
     );
   };
 
-  // Inline ThemeToggle for mobile
   const MobileThemeToggle = () => {
     const { theme, setTheme } = useTheme();
     const { t } = useLanguage();
@@ -148,7 +146,6 @@ export function Header() {
     );
   };
 
-  // Controls to show in both desktop and mobile menu
   const Controls = ({
     closeMenu,
     mobile,
@@ -195,11 +192,9 @@ export function Header() {
             </div>
             <span className="text-xl font-bold">Checkmate</span>
           </Link>
-          {/* Desktop controls */}
           <div className="hidden sm:flex items-center gap-3">
             <Controls />
           </div>
-          {/* Mobile menu */}
           <div className="sm:hidden">
             <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
               <SheetTrigger asChild>

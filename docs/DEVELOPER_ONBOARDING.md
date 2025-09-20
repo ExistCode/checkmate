@@ -41,11 +41,16 @@ OPENAI_API_KEY=sk-...
 # Get from Firecrawl
 FIRECRAWL_API_KEY=fc-...
 
-# Get from Clerk Dashboard
-CLERK_SECRET_KEY=sk_...
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_...
+# AWS Cognito
+AWS_REGION=us-east-1
+COGNITO_USER_POOL_ID=us-east-1_example
+COGNITO_CLIENT_ID=exampleclientid123456789
+COGNITO_CLIENT_SECRET=exampleclientsecret123456789
+COGNITO_DOMAIN=https://your-domain.auth.us-east-1.amazoncognito.com
+COGNITO_REDIRECT_URI=http://localhost:3000/api/auth/callback
+COGNITO_LOGOUT_REDIRECT_URI=http://localhost:3000
 
-# Get from Convex Dashboard
+# Convex
 CONVEX_DEPLOYMENT=dev:...
 NEXT_PUBLIC_CONVEX_URL=https://...convex.cloud
 ```
@@ -78,7 +83,7 @@ Checkmate is a fact-checking platform that:
 
 - **Frontend:** Next.js 15 + TypeScript + Tailwind CSS
 - **Backend:** Convex (serverless database + API)
-- **Auth:** Clerk (user management)
+- **Auth:** Cognito (user management)
 - **AI:** OpenAI (transcription + analysis)
 - **Scraping:** Firecrawl (web content extraction)
 
@@ -141,7 +146,7 @@ Convex provides real-time synchronization:
 
 **4 Main Tables:**
 
-- **`users`** - User accounts (synced from Clerk)
+- **`users`** - User accounts (synced from Cognito)
 - **`tiktokAnalyses`** - Video analysis results
 - **`contentCreators`** - Creator credibility tracking
 - **`creatorComments`** - User feedback on creators
@@ -328,8 +333,8 @@ npx convex dev
 **2. "Authentication error"**
 
 ```bash
-# Solution: Check Clerk configuration in .env.local
-# Ensure CLERK_SECRET_KEY and NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY are set
+# Solution: Check Cognito configuration in .env.local
+# Ensure COGNITO_* variables and AWS_REGION are set
 ```
 
 **3. "Module not found"**
@@ -345,7 +350,7 @@ npm install
 1. **Convex Dashboard** - View database and function logs
 2. **React DevTools** - Inspect component state and props
 3. **Network Tab** - Monitor API requests and responses
-4. **Clerk Dashboard** - Debug authentication issues
+4. **Cognito Dashboard** - Debug authentication issues
 
 ### Getting Help
 
@@ -369,7 +374,7 @@ Now that you're set up, dive deeper into specific areas:
 
 - [Next.js Docs](https://nextjs.org/docs)
 - [Convex Docs](https://docs.convex.dev/)
-- [Clerk Docs](https://clerk.com/docs)
+- [Cognito Docs](https://Cognito.com/docs)
 - [Tailwind CSS](https://tailwindcss.com/docs)
 
 ### Internal Resources

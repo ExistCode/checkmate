@@ -20,7 +20,7 @@ Checkmate is a fact-checking application that analyzes TikTok videos for misinfo
 - **TypeScript** - Type safety and developer experience
 - **Tailwind CSS** - Utility-first CSS framework
 - **shadcn/ui** - Component library built on Radix UI
-- **Clerk** - Authentication and user management
+- **Cognito** - Authentication and user management
 
 ### Backend
 
@@ -176,7 +176,7 @@ graph TD
 
 ```
 App
-├── Providers (Convex, Clerk, Theme)
+├── Providers (Convex, Cognito, Theme)
 ├── Header
 ├── Page Content
 │   ├── Hero Section
@@ -296,7 +296,7 @@ interface ApiError {
 
 ### Authentication Flow
 
-1. **Clerk Integration** - OAuth and email/password
+1. **Cognito Integration** - OAuth and email/password
 2. **JWT Tokens** - Secure session management
 3. **Convex Auth** - Backend authentication verification
 
@@ -456,7 +456,13 @@ npm run dev
 {
   OPENAI_API_KEY: "sk-...",
   FIRECRAWL_API_KEY: "fc-...",
-  CLERK_SECRET_KEY: "sk_...",
+  AWS_REGION: "us-east-1",
+  COGNITO_USER_POOL_ID: "us-east-1_example",
+  COGNITO_CLIENT_ID: "exampleclientid123456789",
+  COGNITO_CLIENT_SECRET: "exampleclientsecret123456789",
+  COGNITO_DOMAIN: "https://your-domain.auth.us-east-1.amazoncognito.com",
+  COGNITO_REDIRECT_URI: "https://app.example.com/api/auth/callback",
+  COGNITO_LOGOUT_REDIRECT_URI: "https://app.example.com",
   CONVEX_DEPLOYMENT: "production-deployment",
   NEXT_PUBLIC_CONVEX_URL: "https://...",
 }

@@ -16,7 +16,7 @@ The Checkmate API provides endpoints for:
 ### REST Endpoints
 
 - **Base URL:** `/api/`
-- **Authentication:** Clerk JWT tokens
+- **Authentication:** Cognito JWT tokens
 - **Content Type:** `application/json`
 - **Rate Limiting:** Per-user limits configured
 
@@ -77,7 +77,7 @@ interface TranscribeResponse {
 ```bash
 curl -X POST /api/transcribe \
   -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <clerk-token>" \
+  -H "Authorization: Bearer <Cognito-token>" \
   -d '{"url": "https://www.tiktok.com/@user/video/123"}'
 ```
 
@@ -290,8 +290,8 @@ interface ApiError {
 
 ### Authentication Flow
 
-1. **User signs in** via Clerk (OAuth/email)
-2. **JWT token issued** by Clerk
+1. **User signs in** via Cognito (OAuth/email)
+2. **JWT token issued** by Cognito
 3. **Token included** in API requests
 4. **Backend validates** token with Convex auth
 

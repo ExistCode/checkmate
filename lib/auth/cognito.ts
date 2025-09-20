@@ -1,22 +1,43 @@
-import { CognitoJwtVerifier } from "aws-jwt-verify";
+import { createRemoteJWKSet, jwtVerify, type JWTPayload } from "jose";
 import { config } from "@/lib/config";
 
 export const ID_TOKEN_COOKIE_NAME = "cognito_id_token";
 export const ACCESS_TOKEN_COOKIE_NAME = "cognito_access_token";
 export const REFRESH_TOKEN_COOKIE_NAME = "cognito_refresh_token";
 
-const idTokenVerifier = CognitoJwtVerifier.create({
-  userPoolId: config.COGNITO_USER_POOL_ID,
-  tokenUse: "id",
-  clientId: config.COGNITO_CLIENT_ID,
-});
+const issuer = `https://cognito-idp.${config.AWS_REGION}.amazonaws.com/${config.COGNITO_USER_POOL_ID}`;
+const jwksUri = `${issuer}/.well-known/jwks.json`;
 
-export type CognitoIdTokenPayload = Awaited<
-  ReturnType<typeof idTokenVerifier.verify>
->;
+const jwks = createRemoteJWKSet(new URL(jwksUri));
+
+function encodeClientSecret(clientId: string, clientSecret: string) {
+  const value = `${clientId}:${clientSecret}`;
+  if (typeof Buffer !== "undefined") {
+    return Buffer.from(value).toString("base64");
+  }
+  if (typeof btoa !== "undefined") {
+    return btoa(value);
+  }
+  throw new Error("No base64 encoder available in this runtime");
+}
+
+export interface CognitoIdTokenPayload extends JWTPayload {
+  sub: string;
+  email?: string;
+  given_name?: string;
+  family_name?: string;
+  "cognito:username"?: string;
+  preferred_username?: string;
+  picture?: string;
+}
 
 export async function verifyIdToken(token: string) {
-  return idTokenVerifier.verify(token);
+  const { payload } = await jwtVerify(token, jwks, {
+    audience: config.COGNITO_CLIENT_ID,
+    issuer,
+  });
+
+  return payload as CognitoIdTokenPayload;
 }
 
 export function getAuthorizeUrl(state?: string) {
@@ -68,9 +89,10 @@ export async function exchangeAuthorizationCode(code: string) {
   };
 
   if (config.COGNITO_CLIENT_SECRET) {
-    const secret = Buffer.from(
-      `${config.COGNITO_CLIENT_ID}:${config.COGNITO_CLIENT_SECRET}`
-    ).toString("base64");
+    const secret = encodeClientSecret(
+      config.COGNITO_CLIENT_ID,
+      config.COGNITO_CLIENT_SECRET
+    );
     headers.Authorization = `Basic ${secret}`;
   }
 
@@ -103,9 +125,10 @@ export async function refreshTokens(refreshToken: string) {
   };
 
   if (config.COGNITO_CLIENT_SECRET) {
-    const secret = Buffer.from(
-      `${config.COGNITO_CLIENT_ID}:${config.COGNITO_CLIENT_SECRET}`
-    ).toString("base64");
+    const secret = encodeClientSecret(
+      config.COGNITO_CLIENT_ID,
+      config.COGNITO_CLIENT_SECRET
+    );
     headers.Authorization = `Basic ${secret}`;
   }
 

@@ -34,7 +34,7 @@
 - **PRs**: Provide a clear summary, link issues, include screenshots/GIFs for UI changes, list breaking changes, and note any env/config updates. Ensure `npm run lint` and `npm run build` pass.
 
 ## Security & Configuration Tips
-- Store secrets in `.env.local` (gitignored). Typical keys: `CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, `OPENAI_API_KEY`, `CONVEX_DEPLOYMENT`/`NEXT_PUBLIC_*`.
+- Store secrets in `.env.local` (gitignored). Typical keys: `COGNITO_USER_POOL_ID/COGNITO_CLIENT_ID`, `COGNITO_CLIENT_SECRET`, `OPENAI_API_KEY`, `CONVEX_DEPLOYMENT`/`NEXT_PUBLIC_*`.
 - Never commit secrets or service tokens; prefer server-side usage in `app/api/*`.
 - Verify `.vercelignore` covers non-deployable files when deploying.
 

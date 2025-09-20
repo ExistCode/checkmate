@@ -22,7 +22,7 @@ The Checkmate project is a Next.js 15+ application using:
 
 - **Frontend:** React 19, Next.js 15, TypeScript 5, Tailwind CSS 4
 - **Backend:** Convex (serverless backend), Next.js API routes
-- **Authentication:** Clerk
+- **Authentication:** Cognito
 - **UI Components:** Radix UI + shadcn/ui
 - **Validation:** Zod
 - **State Management:** React hooks + Convex real-time queries
@@ -734,7 +734,7 @@ export const createTikTokAnalysis = mutation({
     // Get user record
     const user = await ctx.db
       .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .withIndex("by_Cognito_id", (q) => q.eq("cognitoId", identity.subject))
       .unique();
 
     if (!user) {
@@ -1041,7 +1041,7 @@ export const protectedMutation = mutation({
     // Verify user exists
     const user = await ctx.db
       .query("users")
-      .withIndex("by_clerk_id", (q) => q.eq("clerkId", identity.subject))
+      .withIndex("by_Cognito_id", (q) => q.eq("cognitoId", identity.subject))
       .unique();
 
     if (!user) {
