@@ -35,8 +35,18 @@ export async function GET(
     creatorCredibilityRating: (item as any).creatorCredibilityRating ?? null,
     contentCreatorId: (item as any).contentCreatorId ?? null,
     platform: (item as any).platform ?? null,
-    createdAt: (item as any).createdAt ?? null,
-    updatedAt: (item as any).updatedAt ?? null,
+    createdAt:
+      typeof (item as any).createdAt === "number"
+        ? (item as any).createdAt
+        : (item as any).createdAt
+        ? new Date((item as any).createdAt).getTime()
+        : null,
+    updatedAt:
+      typeof (item as any).updatedAt === "number"
+        ? (item as any).updatedAt
+        : (item as any).updatedAt
+        ? new Date((item as any).updatedAt).getTime()
+        : null,
   };
 
   return NextResponse.json(transformed);

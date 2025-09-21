@@ -14,7 +14,21 @@ export async function GET(
   const { creatorId, platform } = await context.params;
   const item = await getCreator(creatorId, platform);
   if (!item) return NextResponse.json(null);
-  return NextResponse.json(item);
+  const normalized = {
+    _id: `${item.id}#${item.platform}`,
+    creatorId: item.id,
+    platform: item.platform,
+    creatorName: (item as any).creatorName || null,
+    credibilityRating: (item as any).credibilityRating ?? 0,
+    totalAnalyses: (item as any).totalAnalyses ?? 0,
+    lastAnalyzedAt:
+      typeof (item as any).lastAnalyzedAt === "number"
+        ? (item as any).lastAnalyzedAt
+        : (item as any).lastAnalyzedAt
+        ? new Date((item as any).lastAnalyzedAt).getTime()
+        : 0,
+  };
+  return NextResponse.json(normalized);
 }
 
 // List analyses for creator

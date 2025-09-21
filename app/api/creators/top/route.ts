@@ -7,5 +7,18 @@ export async function GET(req: NextRequest) {
   const limit = Number(searchParams.get("limit") || "10");
   if (!platform) return NextResponse.json([]);
   const items = await listTopCreatorsByCredibility(platform, limit);
-  return NextResponse.json(items);
+  const transformed = (items as any[]).map((c) => ({
+    creatorId: c.id,
+    platform: c.platform,
+    creatorName: c.creatorName || null,
+    credibilityRating: c.credibilityRating ?? 0,
+    totalAnalyses: c.totalAnalyses ?? 0,
+    lastAnalyzedAt:
+      typeof c.lastAnalyzedAt === "number"
+        ? c.lastAnalyzedAt
+        : c.lastAnalyzedAt
+        ? new Date(c.lastAnalyzedAt).getTime()
+        : 0,
+  }));
+  return NextResponse.json(transformed);
 }

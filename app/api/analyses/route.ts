@@ -24,6 +24,7 @@ export async function GET(_req: NextRequest) {
   };
 
   const transformed = items.map((item: any) => ({
+    _id: item.id,
     id: item.id,
     userId: item.userId,
     videoUrl: item.videoUrl,
@@ -35,8 +36,18 @@ export async function GET(_req: NextRequest) {
     creatorCredibilityRating: item.creatorCredibilityRating ?? null,
     contentCreatorId: item.contentCreatorId ?? null,
     platform: item.platform ?? null,
-    createdAt: item.createdAt ?? null,
-    updatedAt: item.updatedAt ?? null,
+    createdAt:
+      typeof item.createdAt === "number"
+        ? item.createdAt
+        : item.createdAt
+        ? new Date(item.createdAt).getTime()
+        : null,
+    updatedAt:
+      typeof item.updatedAt === "number"
+        ? item.updatedAt
+        : item.updatedAt
+        ? new Date(item.updatedAt).getTime()
+        : null,
   }));
 
   return NextResponse.json(transformed);
