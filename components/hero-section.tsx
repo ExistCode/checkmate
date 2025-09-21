@@ -57,14 +57,6 @@ interface FactCheckResult {
     description: string;
     references?: Array<{ title: string; url: string }>;
   }>;
-  politicalBias?: {
-    biasDirection: "left" | "right" | "center" | "none";
-    biasIntensity: number;
-    confidence: number;
-    explanation: string;
-    biasIndicators: string[];
-    politicalTopics: string[];
-  };
 }
 
 export function HeroSection({ initialUrl = "" }: HeroSectionProps) {
@@ -271,18 +263,18 @@ This claim appears to have originated from legitimate news sources around early 
             "Mock content summary: The system has analyzed the provided URL and generated this demo fact-check result to show how real analysis would work.",
           sources: [
             {
-              title: "Mock Reuters Article",
-              url: "https://reuters.com/mock-article",
+              title: "Reuters Fact Check: [Sample] Fact-checking common vaccine claims",
+              url: "https://www.reuters.com/fact-check/",
               credibility: 0.9,
             },
             {
-              title: "Mock BBC News Report",
-              url: "https://bbc.com/mock-report",
+              title: "BBC Reality Check: [Sample] Verifying viral social media claims",
+              url: "https://www.bbc.com/news/reality_check",
               credibility: 0.85,
             },
             {
-              title: "Mock AP News Coverage",
-              url: "https://apnews.com/mock-coverage",
+              title: "AP News Fact Check: [Sample] Investigating misinformation",
+              url: "https://apnews.com/ap-fact-check",
               credibility: 0.8,
             },
           ],
@@ -294,17 +286,17 @@ This claim appears to have originated from legitimate news sources around early 
               {
                 source: "Reuters",
                 date: "2024-01-15",
-                url: "https://reuters.com/mock-article",
+                url: "https://www.reuters.com/fact-check/",
               },
               {
                 source: "BBC News",
                 date: "2024-01-16",
-                url: "https://bbc.com/mock-report",
+                url: "https://www.bbc.com/news/reality_check",
               },
               {
                 source: "Associated Press",
                 date: "2024-01-16",
-                url: "https://apnews.com/mock-coverage",
+                url: "https://apnews.com/ap-fact-check",
               },
             ],
             propagationPaths: ["news-media", "twitter", "tiktok", "facebook"],
@@ -316,8 +308,8 @@ This claim appears to have originated from legitimate news sources around early 
                 "People trust this information because it comes from established, reputable news organizations with strong fact-checking standards.",
               references: [
                 {
-                  title: "How to Spot Reliable News Sources: A Practical Guide",
-                  url: "https://example.com/spotting-reliable-sources",
+                  title: "International Fact-Checking Network - Poynter",
+                  url: "https://www.poynter.org/ifcn/",
                 },
               ],
             },
@@ -327,8 +319,8 @@ This claim appears to have originated from legitimate news sources around early 
                 "Multiple independent news sources reporting the same facts increases confidence in the information's accuracy.",
               references: [
                 {
-                  title: "Why Multiple Sources Matter: Lessons from Viral Misinformation Cases",
-                  url: "https://example.com/multiple-sources-matter",
+                  title: "FactCheck.org - Annenberg Public Policy Center",
+                  url: "https://www.factcheck.org/",
                 },
               ],
             },
@@ -338,8 +330,8 @@ This claim appears to have originated from legitimate news sources around early 
                 "Information from recognized news authorities is more readily believed due to their established reputation.",
               references: [
                 {
-                  title: "When Trusted Sources Get It Wrong: Real Examples and What We Can Learn",
-                  url: "https://example.com/trusted-sources-wrong",
+                  title: "Snopes.com - Fact Checking and Debunking Urban Legends",
+                  url: "https://www.snopes.com/",
                 },
               ],
             },
@@ -367,17 +359,17 @@ This claim appears to have originated from legitimate news sources around early 
               {
                 source: "Reuters",
                 date: "2024-01-15",
-                url: "https://reuters.com/mock-article",
+                url: "https://www.reuters.com/fact-check/",
               },
               {
                 source: "BBC News",
                 date: "2024-01-16",
-                url: "https://bbc.com/mock-report",
+                url: "https://www.bbc.com/news/reality_check",
               },
               {
                 source: "Associated Press",
                 date: "2024-01-16",
-                url: "https://apnews.com/mock-coverage",
+                url: "https://apnews.com/ap-fact-check",
               },
             ],
             evolutionSteps: [
@@ -419,8 +411,8 @@ This claim appears to have originated from legitimate news sources around early 
                 "People trust this information because it comes from established, reputable news organizations with strong fact-checking standards.",
               references: [
                 {
-                  title: "How to Spot Reliable News Sources: A Practical Guide",
-                  url: "https://example.com/spotting-reliable-sources",
+                  title: "International Fact-Checking Network - Poynter",
+                  url: "https://www.poynter.org/ifcn/",
                 },
               ],
             },
@@ -430,8 +422,8 @@ This claim appears to have originated from legitimate news sources around early 
                 "Multiple independent news sources reporting the same facts increases confidence in the information's accuracy.",
               references: [
                 {
-                  title: "Why Multiple Sources Matter: Lessons from Viral Misinformation Cases",
-                  url: "https://example.com/multiple-sources-matter",
+                  title: "FactCheck.org - Annenberg Public Policy Center",
+                  url: "https://www.factcheck.org/",
                 },
               ],
             },
@@ -441,41 +433,28 @@ This claim appears to have originated from legitimate news sources around early 
                 "Information from recognized news authorities is more readily believed due to their established reputation.",
               references: [
                 {
-                  title: "When Trusted Sources Get It Wrong: Real Examples and What We Can Learn",
-                  url: "https://example.com/trusted-sources-wrong",
+                  title: "Snopes.com - Fact Checking and Debunking Urban Legends",
+                  url: "https://www.snopes.com/",
                 },
               ],
             },
           ],
-          politicalBias: {
-            biasDirection: "center" as const,
-            biasIntensity: 0.2,
-            confidence: 0.8,
-            explanation:
-              "The content demonstrates relatively balanced reporting with minimal political lean. While discussing current events, it primarily focuses on factual information from credible sources without significant ideological framing or partisan language.",
-            biasIndicators: [
-              "Neutral language and terminology",
-              "Multiple source verification",
-              "Factual reporting approach",
-            ],
-            politicalTopics: ["current events", "news reporting", "politics"],
-          },
           sources: [
             {
-              url: "https://reuters.com/mock-article",
-              title: "Mock Reuters Article",
+              url: "https://www.reuters.com/fact-check/",
+              title: "Reuters Fact Check: [Sample] Fact-checking common vaccine claims",
               source: "Reuters",
               credibility: 0.9,
             },
             {
-              url: "https://bbc.com/mock-report",
-              title: "Mock BBC News Report",
+              url: "https://www.bbc.com/news/reality_check",
+              title: "BBC Reality Check: [Sample] Verifying viral social media claims",
               source: "BBC News",
               credibility: 0.85,
             },
             {
-              url: "https://apnews.com/mock-coverage",
-              title: "Mock AP News Coverage",
+              url: "https://apnews.com/ap-fact-check",
+              title: "AP News Fact Check: [Sample] Investigating misinformation",
               source: "Associated Press",
               credibility: 0.8,
             },
@@ -487,16 +466,16 @@ This claim appears to have originated from legitimate news sources around early 
             "This is a mock demonstration of how claims would be analyzed and verified through the fact-checking system.",
           allLinks: [
             {
-              url: "https://reuters.com/mock-article",
-              title: "Mock Reuters Article",
+              url: "https://www.reuters.com/fact-check/",
+              title: "Reuters Fact Check: [Sample] Fact-checking common vaccine claims",
             },
             {
-              url: "https://bbc.com/mock-report",
-              title: "Mock BBC News Report",
+              url: "https://www.bbc.com/news/reality_check",
+              title: "BBC Reality Check: [Sample] Verifying viral social media claims",
             },
             {
-              url: "https://apnews.com/mock-coverage",
-              title: "Mock AP News Coverage",
+              url: "https://apnews.com/ap-fact-check",
+              title: "AP News Fact Check: [Sample] Investigating misinformation",
             },
           ],
         },
@@ -794,7 +773,7 @@ This claim appears to have originated from legitimate news sources around early 
         <p className="mx-auto mb-8 max-w-2xl text-lg text-muted-foreground md:text-xl">
           {t.heroSubtitle}
         </p>
-        <div className="mx-auto max-w-2xl space-y-4 px-4">
+        <div className="mx-auto max-w-2xl space-y-4 px-2 sm:px-4">
           <form
             onSubmit={handleSubmit}
             className="flex gap-3 items-center justify-center"
@@ -854,7 +833,7 @@ This claim appears to have originated from legitimate news sources around early 
 
         {/* Results */}
         {(result || mockResult) && (
-          <div className="mx-auto max-w-7xl mt-8 px-4">
+          <div className="mx-auto max-w-7xl mt-8 px-2 sm:px-4">
             <Card className="overflow-hidden">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -1171,7 +1150,7 @@ This claim appears to have originated from legitimate news sources around early 
                                     Origin Tracing & Belief Evolution
                                   </h4>
                                 </div>
-                                <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+                                <div className="bg-gray-50 dark:bg-gray-900 py-4 px-0 sm:px-4 rounded-lg">
                                   <OriginTracingDiagram
                                     originTracing={
                                       originTracingData?.originTracing ||
@@ -1186,18 +1165,24 @@ This claim appears to have originated from legitimate news sources around early 
                                       ).beliefDrivers
                                     }
                                     sources={
-                                      originTracingData?.sources &&
+                                      // Prioritize currentData.factCheck.sources for the diagram
+                                      (currentData.factCheck as unknown as FactCheckResult)
+                                        ?.sources?.map((source) => ({
+                                          url: source.url,
+                                          title: source.title,
+                                          source: source.title || new URL(source.url).hostname,
+                                          credibility: Math.round((source.credibility || 0.5) * 100), // Convert to percentage
+                                        })) ||
+                                      // Fallback to originTracingData.sources if no factCheck sources
+                                      (originTracingData?.sources &&
                                       originTracingData?.sources.length > 0
-                                        ? originTracingData.sources
-                                        : (
-                                            currentData.factCheck as unknown as FactCheckResult
-                                          ).sources?.map((source) => ({
+                                        ? originTracingData.sources.map((source: any) => ({
                                             url: source.url,
                                             title: source.title,
-                                            source: source.title,
-                                            credibility:
-                                              source.credibility || 0.5,
+                                            source: source.source || new URL(source.url).hostname,
+                                            credibility: Math.round((source.credibility || 0.5) * 100),
                                           }))
+                                        : [])
                                     }
                                     verdict={
                                       (
@@ -1215,7 +1200,15 @@ This claim appears to have originated from legitimate news sources around early 
                                         currentData.factCheck as unknown as FactCheckResult
                                       ).content
                                     }
-                                    allLinks={originTracingData?.allLinks}
+                                    allLinks={
+                                      originTracingData?.allLinks ||
+                                      // Generate allLinks from currentData.factCheck.sources if not available
+                                      (currentData.factCheck as unknown as FactCheckResult)
+                                        ?.sources?.map((source) => ({
+                                          url: source.url,
+                                          title: source.title,
+                                        }))
+                                    }
                                   />
                                 </div>
                               </div>
@@ -1396,122 +1389,6 @@ This claim appears to have originated from legitimate news sources around early 
                                         </div>
                                       </div>
                                     )}
-
-                                  {/* Political Bias Analysis */}
-                                  {(
-                                    currentData.factCheck as unknown as FactCheckResult
-                                  ).politicalBias && (
-                                    currentData.factCheck as unknown as FactCheckResult
-                                  ).politicalBias!.biasDirection !== "none" && (
-                                    <div>
-                                      <div className="flex items-center gap-2 mb-3">
-                                        <div className="w-1 h-6 bg-gradient-to-b from-red-500 to-blue-500 rounded-full"></div>
-                                        <h4 className="font-semibold text-base">
-                                          Political Bias Analysis
-                                        </h4>
-                                      </div>
-                                      <div className="bg-gradient-to-r from-blue-50/50 to-red-50/50 dark:from-blue-900/10 dark:to-red-900/10 p-4 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
-                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-                                          {/* Bias Direction */}
-                                          <div className="flex items-center gap-2">
-                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
-                                              (currentData.factCheck as unknown as FactCheckResult).politicalBias!.biasDirection === "left"
-                                                ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-                                                : (currentData.factCheck as unknown as FactCheckResult).politicalBias!.biasDirection === "right"
-                                                  ? "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
-                                                  : "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
-                                            }`}>
-                                              {(currentData.factCheck as unknown as FactCheckResult).politicalBias!.biasDirection === "left" ? "L" 
-                                                : (currentData.factCheck as unknown as FactCheckResult).politicalBias!.biasDirection === "right" ? "R" 
-                                                : "C"}
-                                            </div>
-                                            <div>
-                                              <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Bias Direction</p>
-                                              <p className="text-sm font-medium capitalize">
-                                                {(currentData.factCheck as unknown as FactCheckResult).politicalBias!.biasDirection}
-                                                {(currentData.factCheck as unknown as FactCheckResult).politicalBias!.biasDirection === "center" ? " Leaning" : " Leaning"}
-                                              </p>
-                                            </div>
-                                          </div>
-
-                                          {/* Bias Intensity */}
-                                          <div className="flex items-center gap-2">
-                                            <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-                                              <span className="text-xs font-medium text-orange-600 dark:text-orange-400">
-                                                {Math.round((currentData.factCheck as unknown as FactCheckResult).politicalBias!.biasIntensity * 100)}%
-                                              </span>
-                                            </div>
-                                            <div>
-                                              <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Intensity</p>
-                                              <div className="w-16 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                                                <div 
-                                                  className="h-full bg-orange-500 rounded-full transition-all duration-300"
-                                                  style={{
-                                                    width: `${(currentData.factCheck as unknown as FactCheckResult).politicalBias!.biasIntensity * 100}%`
-                                                  }}
-                                                />
-                                              </div>
-                                            </div>
-                                          </div>
-
-                                          {/* Confidence */}
-                                          <div className="flex items-center gap-2">
-                                            <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                                              <span className="text-xs font-medium text-green-600 dark:text-green-400">
-                                                {Math.round((currentData.factCheck as unknown as FactCheckResult).politicalBias!.confidence * 100)}%
-                                              </span>
-                                            </div>
-                                            <div>
-                                              <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Confidence</p>
-                                              <div className="w-16 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                                                <div 
-                                                  className="h-full bg-green-500 rounded-full transition-all duration-300"
-                                                  style={{
-                                                    width: `${(currentData.factCheck as unknown as FactCheckResult).politicalBias!.confidence * 100}%`
-                                                  }}
-                                                />
-                                              </div>
-                                            </div>
-                                          </div>
-                                        </div>
-
-                                        {/* Explanation */}
-                                        <div className="mb-4">
-                                          <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
-                                            {(currentData.factCheck as unknown as FactCheckResult).politicalBias!.explanation}
-                                          </p>
-                                        </div>
-
-                                        {/* Political Topics */}
-                                        {(currentData.factCheck as unknown as FactCheckResult).politicalBias!.politicalTopics.length > 0 && (
-                                          <div className="mb-3">
-                                            <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Political Topics:</p>
-                                            <div className="flex flex-wrap gap-1">
-                                              {(currentData.factCheck as unknown as FactCheckResult).politicalBias!.politicalTopics.slice(0, 5).map((topic: string, i: number) => (
-                                                <span key={i} className="px-2 py-1 bg-gray-200 dark:bg-gray-700 text-xs rounded-full">
-                                                  {topic}
-                                                </span>
-                                              ))}
-                                            </div>
-                                          </div>
-                                        )}
-
-                                        {/* Bias Indicators */}
-                                        {(currentData.factCheck as unknown as FactCheckResult).politicalBias!.biasIndicators.length > 0 && (
-                                          <div>
-                                            <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Key Indicators:</p>
-                                            <ul className="list-disc pl-4 space-y-1">
-                                              {(currentData.factCheck as unknown as FactCheckResult).politicalBias!.biasIndicators.slice(0, 3).map((indicator: string, i: number) => (
-                                                <li key={i} className="text-xs text-gray-600 dark:text-gray-400">
-                                                  {indicator}
-                                                </li>
-                                              ))}
-                                            </ul>
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                  )}
                                 </div>
                               )}
                             </div>

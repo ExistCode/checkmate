@@ -15,6 +15,25 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Card } from '../ui/card';
+
+// Add mobile-specific styles for ReactFlow
+const mobileStyles = `
+  .react-flow-mobile-container {
+    position: relative;
+    width: 100% !important;
+    height: 100% !important;
+  }
+  .react-flow-mobile-container .react-flow__viewport {
+    width: 100% !important;
+    height: 100% !important;
+  }
+  @media (max-width: 640px) {
+    .react-flow-mobile-container .react-flow__controls {
+      bottom: 10px !important;
+      right: 10px !important;
+    }
+  }
+`;
 import { Badge } from '../ui/badge';
 import { 
   ExternalLink, 
@@ -268,42 +287,43 @@ interface NodeData {
   references?: Array<{ title: string; url: string }>;
   platform?: string;
   impact?: string;
+  sourceName?: string;
 }
 
 // Helper function to get platform/source icons
 const getPlatformIcon = (source: string) => {
   const lowerSource = source.toLowerCase();
   
-  // Social Media Platforms
+  // Social Media Platforms - keep recognizable symbols but avoid letters
   if (lowerSource.includes('twitter') || lowerSource.includes('x.com')) {
-    return <div className="w-5 h-5 bg-black text-white rounded flex items-center justify-center text-xs font-bold">X</div>;
+    return <MessageSquare className="w-5 h-5 text-gray-800" />;
   }
   if (lowerSource.includes('facebook')) {
-    return <div className="w-5 h-5 bg-blue-600 text-white rounded flex items-center justify-center text-xs font-bold">f</div>;
+    return <Users className="w-5 h-5 text-blue-600" />;
   }
   if (lowerSource.includes('instagram')) {
     return <div className="w-5 h-5 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded flex items-center justify-center text-xs font-bold">📷</div>;
   }
   if (lowerSource.includes('tiktok')) {
-    return <div className="w-5 h-5 bg-black text-white rounded flex items-center justify-center text-xs font-bold">🎵</div>;
+    return <Video className="w-5 h-5 text-gray-800" />;
   }
   if (lowerSource.includes('youtube')) {
-    return <div className="w-5 h-5 bg-red-600 text-white rounded flex items-center justify-center text-xs font-bold">▶</div>;
+    return <Video className="w-5 h-5 text-red-600" />;
   }
   if (lowerSource.includes('telegram')) {
-    return <div className="w-5 h-5 bg-blue-500 text-white rounded flex items-center justify-center text-xs font-bold">✈</div>;
+    return <MessageSquare className="w-5 h-5 text-blue-500" />;
   }
   if (lowerSource.includes('whatsapp')) {
-    return <div className="w-5 h-5 bg-green-500 text-white rounded flex items-center justify-center text-xs font-bold">💬</div>;
+    return <MessageSquare className="w-5 h-5 text-green-500" />;
   }
   if (lowerSource.includes('reddit')) {
-    return <div className="w-5 h-5 bg-orange-500 text-white rounded flex items-center justify-center text-xs font-bold">R</div>;
+    return <MessageSquare className="w-5 h-5 text-orange-500" />;
   }
   if (lowerSource.includes('discord')) {
-    return <div className="w-5 h-5 bg-indigo-500 text-white rounded flex items-center justify-center text-xs font-bold">💬</div>;
+    return <MessageSquare className="w-5 h-5 text-indigo-500" />;
   }
   if (lowerSource.includes('linkedin')) {
-    return <div className="w-5 h-5 bg-blue-700 text-white rounded flex items-center justify-center text-xs font-bold">in</div>;
+    return <Users className="w-5 h-5 text-blue-700" />;
   }
 
   // Forums and Communities
@@ -314,27 +334,14 @@ const getPlatformIcon = (source: string) => {
     return <Users className="w-5 h-5 text-gray-600" />;
   }
 
-  // Fact-checking Organizations
-  if (lowerSource.includes('snopes')) {
-    return <div className="w-5 h-5 bg-green-600 text-white rounded flex items-center justify-center text-xs font-bold">S</div>;
+  // Fact-checking Organizations - use generic shield icon for fact-checkers
+  if (lowerSource.includes('snopes') || lowerSource.includes('factcheck.org') || lowerSource.includes('politifact')) {
+    return <Shield className="w-5 h-5 text-emerald-600" />;
   }
-  if (lowerSource.includes('factcheck.org')) {
-    return <div className="w-5 h-5 bg-blue-600 text-white rounded flex items-center justify-center text-xs font-bold">✓</div>;
-  }
-  if (lowerSource.includes('politifact')) {
-    return <div className="w-5 h-5 bg-orange-600 text-white rounded flex items-center justify-center text-xs font-bold">P</div>;
-  }
-  if (lowerSource.includes('reuters')) {
-    return <div className="w-5 h-5 bg-orange-500 text-white rounded flex items-center justify-center text-xs font-bold">R</div>;
-  }
-  if (lowerSource.includes('ap news') || lowerSource.includes('associated press')) {
-    return <div className="w-5 h-5 bg-red-600 text-white rounded flex items-center justify-center text-xs font-bold">AP</div>;
-  }
-  if (lowerSource.includes('bbc')) {
-    return <div className="w-5 h-5 bg-black text-white rounded flex items-center justify-center text-xs font-bold">BBC</div>;
-  }
-  if (lowerSource.includes('cnn')) {
-    return <div className="w-5 h-5 bg-red-600 text-white rounded flex items-center justify-center text-xs font-bold">CNN</div>;
+  
+  // News Organizations - use generic news icon for major news outlets
+  if (lowerSource.includes('reuters') || lowerSource.includes('ap news') || lowerSource.includes('associated press') || lowerSource.includes('bbc') || lowerSource.includes('cnn')) {
+    return <FileText className="w-5 h-5 text-blue-600" />;
   }
 
   // Default icons by type
@@ -498,10 +505,12 @@ const SourceNode = ({ data }: { data: NodeData }) => (
     
     <div className="flex items-center gap-3 mb-3">
       <div className="flex-shrink-0">
-        {getPlatformIcon(data.label)}
+        {getPlatformIcon(data.sourceName || data.label)}
       </div>
       <div className="flex-1">
-        <div className="font-semibold text-emerald-900 text-sm mb-1">Fact-Check Source</div>
+        <div className="font-semibold text-emerald-900 text-sm mb-1">
+          {data.sourceName ? formatNodeText(data.sourceName, 30) : 'Fact-Check Source'}
+        </div>
         <Badge variant="outline" className="text-xs bg-emerald-100 text-emerald-800">
           {data.credibility}% credible
         </Badge>
@@ -1077,6 +1086,9 @@ export function OriginTracingDiagram({
       const col = index % LAYOUT.sources.maxPerRow;
       const row = Math.floor(index / LAYOUT.sources.maxPerRow);
       
+      // Extract source name from URL if source field is not available
+      const sourceName = source.source || new URL(source.url).hostname.replace('www.', '');
+      
       nodes.push({
         id: sourceNodeId,
         type: 'source',
@@ -1086,6 +1098,7 @@ export function OriginTracingDiagram({
         },
         data: { 
           label: source.title, 
+          sourceName: sourceName,
           credibility: source.credibility,
           url: source.url 
         },
@@ -1125,6 +1138,9 @@ export function OriginTracingDiagram({
       const matchingSource = sources.find(source => source.url === link.url);
       const credibility = matchingSource?.credibility ?? 0.5; // Use actual credibility or neutral default
       
+      // Extract source name from URL for consistency
+      const sourceName = matchingSource?.source || new URL(link.url).hostname.replace('www.', '');
+      
       nodes.push({
         id: linkNodeId,
         type: 'source',
@@ -1134,6 +1150,7 @@ export function OriginTracingDiagram({
         },
         data: {
           label: link.title || link.url,
+          sourceName: sourceName,
           credibility: Math.round(credibility * 100), // Convert to percentage like other sources
           url: link.url,
         },
@@ -1168,7 +1185,9 @@ export function OriginTracingDiagram({
   }
 
   return (
-    <Card className="w-full h-[600px] p-3 shadow-lg mb-6">
+    <>
+      <style dangerouslySetInnerHTML={{ __html: mobileStyles }} />
+      <Card className="w-full h-[600px] sm:h-[500px] md:h-[600px] p-3 shadow-lg mb-6">
       <div className="h-full">
         <div className="mb-3">
           <h3 className="text-lg font-bold mb-1 flex items-center gap-2">
@@ -1177,9 +1196,11 @@ export function OriginTracingDiagram({
           </h3>
           <p className="text-xs text-muted-foreground">
             Step-by-step evolution from origin through platforms to current state
+            <span className="hidden sm:inline ml-2 text-gray-400">• Scroll wheel to zoom, controls to reset view</span>
+            <span className="sm:hidden ml-2 text-gray-400">• Pinch to zoom, tap controls to reset</span>
           </p>
         </div>
-        <div className="h-[calc(100%-3.5rem)] border rounded-lg overflow-hidden bg-gradient-to-br from-gray-50 to-white">
+        <div className="h-[calc(100%-3.5rem)] w-full border rounded-lg overflow-hidden bg-gradient-to-br from-gray-50 to-white relative">
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -1189,22 +1210,46 @@ export function OriginTracingDiagram({
             nodeTypes={nodeTypes}
             fitView
             fitViewOptions={{ 
-              padding: 0.1, 
+              padding: 0.15, // More padding on mobile
               includeHiddenNodes: false,
-              minZoom: 0.15,
-              maxZoom: 0.6 
+              minZoom: 0.1, // Lower min zoom for mobile
+              maxZoom: 1.5
             }}
-            minZoom={0.15}
-            maxZoom={1.2}
+            minZoom={0.1} // Lower min zoom for mobile
+            maxZoom={1.5}
             attributionPosition="bottom-left"
-            defaultViewport={{ x: 0, y: 0, zoom: 0.3 }}
+            defaultViewport={{ x: 0, y: 0, zoom: 0.2 }} // Lower default zoom for mobile
             proOptions={{ hideAttribution: false }}
+            // Ensure proper container sizing
+            style={{ width: '100%', height: '100%' }}
+            className="react-flow-mobile-container"
+            // Disable interactions that interfere with scrolling
+            nodesDraggable={false}
+            nodesConnectable={false}
+            elementsSelectable={true}  // Enable to allow link clicks
+            panOnDrag={false}
+            // Keep zoom functionality for better UX
+            zoomOnScroll={true}
+            zoomOnPinch={true}
+            zoomOnDoubleClick={false}  // Disable to prevent accidental interactions
+            // Allow page scrolling when not actively zooming
+            preventScrolling={false}
+            // Prevent selection visual feedback while allowing clicks
+            selectNodesOnDrag={false}
+            // Disable multi-selection
+            multiSelectionKeyCode={null}
           >
-            <Controls showInteractive={false} />
+            <Controls 
+              showInteractive={false}
+              showZoom={true}  // Keep zoom controls visible
+              showFitView={true}  // Allow users to reset view
+              position="top-right"
+            />
             <Background gap={15} size={1} color="#f1f5f9" />
           </ReactFlow>
         </div>
       </div>
     </Card>
+    </>
   );
 }
