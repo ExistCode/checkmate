@@ -13,7 +13,6 @@ import Link from "next/link";
 import React from "react";
 
 export function Header() {
-  const router = useRouter();
   const pathname = usePathname();
   const { t } = useLanguage();
   const [menuOpen, setMenuOpen] = React.useState(false);

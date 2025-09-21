@@ -1,6 +1,9 @@
 import FirecrawlApp from "@mendable/firecrawl-js";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
-import { StartTranscriptionJobCommand, GetTranscriptionJobCommand } from "@aws-sdk/client-transcribe";
+import {
+  StartTranscriptionJobCommand,
+  GetTranscriptionJobCommand,
+} from "@aws-sdk/client-transcribe";
 import { config } from "../lib/config";
 import { s3, transcribe } from "../lib/aws";
 
@@ -44,8 +47,8 @@ export async function transcribeVideoDirectly(videoUrl: string) {
       .toString(36)
       .slice(2, 8)}.mp4`;
 
-    const contentType = videoResponse.headers.get("content-type") ||
-      "application/octet-stream";
+    const contentType =
+      videoResponse.headers.get("content-type") || "application/octet-stream";
 
     await s3.send(
       new PutObjectCommand({
@@ -83,12 +86,14 @@ export async function transcribeVideoDirectly(videoUrl: string) {
       if (!job) break;
       if (job.TranscriptionJobStatus === "COMPLETED") {
         transcriptUri = job.Transcript?.TranscriptFileUri;
-        // @ts-ignore - languageCode may be in settings
         language = (job?.LanguageCode as string) || language;
         break;
       }
       if (job.TranscriptionJobStatus === "FAILED") {
-        return { success: false, error: job.FailureReason || "Transcription failed" };
+        return {
+          success: false,
+          error: job.FailureReason || "Transcription failed",
+        };
       }
       await new Promise((r) => setTimeout(r, 5000));
     }

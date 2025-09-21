@@ -19,9 +19,6 @@ const baseSchema = z
     DDB_TABLE_USERS: z.string().optional(),
     DDB_TABLE_COMMENTS: z.string().optional(),
     // Local auth
-    AUTH_SECRET: z.string().min(1, "AUTH_SECRET is required"),
-    ADMIN_EMAIL: z.string().email("ADMIN_EMAIL must be a valid email"),
-    ADMIN_PASSWORD: z.string().min(1, "ADMIN_PASSWORD is required"),
 
     // Convex (removed)
     // CONVEX_DEPLOYMENT: z.string().min(1, "Convex deployment is required"),
