@@ -39,6 +39,7 @@
     "@the-convocation/twitter-scraper": "^0.17.1",
     "@tobyg74/tiktok-api-dl": "^1.3.2",
     "@types/jsdom": "^21.1.7",
+    "@xyflow/react": "^12.8.5",
     "ai": "^4.3.16",
     "axios": "^1.10.0",
     "better-auth": "^1.3.13",

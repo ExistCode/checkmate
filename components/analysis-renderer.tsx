@@ -1,4 +1,8 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { OriginTracingDiagram } from "./analysis";
+import { type OriginTracingResult } from "@/lib/analysis/parseOriginTracing";
+
+// parsing moved to lib/analysis/parseOriginTracing
 
 /**
  * AnalysisRenderer - Enhanced component to render markdown-like analysis content
@@ -20,9 +24,49 @@ import React from "react";
  * - - Bullet points
  * - - **Sub-headers:** with content
  */
+type DiagramData = OriginTracingResult & { claim?: string; allLinks?: Array<{ url: string; title?: string }> };
+
 export function AnalysisRenderer({ content }: { content: string }) {
-  // Guard against null, undefined, or empty content
-  if (!content || typeof content !== "string" || content.trim() === "") {
+  // Auto-generate diagram data on mount
+  const [diagramData, setDiagramData] = useState<DiagramData | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const generateDiagram = async () => {
+      if (!content || content.trim() === '') return;
+      
+      try {
+        setLoading(true);
+        const res = await fetch("/api/analyses/origin-tracing", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setDiagramData({
+            originTracing: data.originTracing,
+            beliefDrivers: data.beliefDrivers,
+            sources: data.sources,
+            verdict: data.verdict,
+            claim: data.claim,
+            allLinks: data.allLinks,
+          } as DiagramData);
+        }
+      } catch (e) {
+        // Silently fail - diagram is optional
+        console.warn('Failed to generate origin tracing diagram:', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    generateDiagram();
+  }, [content]);
+
+  // Guard against null/empty content after hooks are declared
+  const isEmpty = !content || typeof content !== "string" || content.trim() === "";
+  if (isEmpty) {
     return null;
   }
 
@@ -276,5 +320,29 @@ export function AnalysisRenderer({ content }: { content: string }) {
     return parts.length > 0 ? parts : text;
   };
 
-  return <div className="space-y-4">{renderContent(content)}</div>;
+  return (
+    <div className="space-y-4">
+      {/* Auto-render diagram when available */}
+      {diagramData && !loading && (
+        <OriginTracingDiagram
+          originTracing={diagramData.originTracing}
+          beliefDrivers={diagramData.beliefDrivers}
+          sources={diagramData.sources}
+          verdict={diagramData.verdict}
+          content={diagramData.claim ?? content}
+          allLinks={diagramData.allLinks}
+        />
+      )}
+      
+      {/* Show loading state for diagram */}
+      {loading && (
+        <div className="flex items-center justify-center p-8 bg-muted rounded-lg">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mr-3"></div>
+          <span className="text-sm text-muted-foreground">Generating belief evolution diagram...</span>
+        </div>
+      )}
+      
+      {renderContent(content)}
+    </div>
+  );
 }

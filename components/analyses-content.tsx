@@ -355,8 +355,11 @@ export function AnalysisPage({ analysisId }: { analysisId: string }) {
                         </div>
                       )}
 
-                    {/* Origin Tracing */}
-                    {analysis.factCheck.originTracing?.hypothesizedOrigin && (
+
+                    {/* Origin Tracing Text (Fallback) */}
+                    {analysis.factCheck.originTracing?.hypothesizedOrigin && 
+                     !analysis.factCheck.beliefDrivers?.length && 
+                     !analysis.factCheck.sources?.length && (
                       <div className="bg-muted p-4 rounded-lg">
                         <p className="font-medium mb-2 text-base">Origin:</p>
                         <div className="text-sm text-muted-foreground">

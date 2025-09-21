@@ -61,6 +61,30 @@ export function Header() {
   const MobileThemeToggle = () => {
     const { theme, setTheme } = useTheme();
     const { t } = useLanguage();
+    const [mounted, setMounted] = React.useState(false);
+
+    // Prevent hydration mismatch by only rendering after mount
+    React.useEffect(() => {
+      setMounted(true);
+    }, []);
+
+    if (!mounted) {
+      // Return a placeholder that matches the button structure but without theme-dependent content
+      return (
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full justify-start"
+          disabled
+        >
+          <span className="inline-flex items-center">
+            <div className="h-4 w-4 mr-2" />
+            {t.toggleTheme}
+          </span>
+        </Button>
+      );
+    }
+
     const nextTheme = theme === "dark" ? "light" : "dark";
     return (
       <Button
