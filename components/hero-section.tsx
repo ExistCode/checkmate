@@ -57,11 +57,19 @@ interface FactCheckResult {
     description: string;
     references?: Array<{ title: string; url: string }>;
   }>;
+  politicalBias?: {
+    biasDirection: "left" | "right" | "center" | "none";
+    biasIntensity: number;
+    confidence: number;
+    explanation: string;
+    biasIndicators: string[];
+    politicalTopics: string[];
+  };
 }
 
 export function HeroSection({ initialUrl = "" }: HeroSectionProps) {
   const [url, setUrl] = useState(initialUrl);
-  const [isAnalysisExpanded, setIsAnalysisExpanded] = useState(false);
+  const [isAnalysisExpanded, setIsAnalysisExpanded] = useState(true);
   const [isDetailedAnalysisExpanded, setIsDetailedAnalysisExpanded] =
     useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -308,16 +316,34 @@ This claim appears to have originated from legitimate news sources around early 
               name: "Source Credibility",
               description:
                 "People trust this information because it comes from established, reputable news organizations with strong fact-checking standards.",
+              references: [
+                {
+                  title: "How to Spot Reliable News Sources: A Practical Guide",
+                  url: "https://example.com/spotting-reliable-sources",
+                },
+              ],
             },
             {
               name: "Consensus Reporting",
               description:
                 "Multiple independent news sources reporting the same facts increases confidence in the information's accuracy.",
+              references: [
+                {
+                  title: "Why Multiple Sources Matter: Lessons from Viral Misinformation Cases",
+                  url: "https://example.com/multiple-sources-matter",
+                },
+              ],
             },
             {
               name: "Authority Bias",
               description:
                 "Information from recognized news authorities is more readily believed due to their established reputation.",
+              references: [
+                {
+                  title: "When Trusted Sources Get It Wrong: Real Examples and What We Can Learn",
+                  url: "https://example.com/trusted-sources-wrong",
+                },
+              ],
             },
           ],
         },
@@ -395,8 +421,8 @@ This claim appears to have originated from legitimate news sources around early 
                 "People trust this information because it comes from established, reputable news organizations with strong fact-checking standards.",
               references: [
                 {
-                  title: "Trust in News Media Research",
-                  url: "https://example.com/trust-research",
+                  title: "How to Spot Reliable News Sources: A Practical Guide",
+                  url: "https://example.com/spotting-reliable-sources",
                 },
               ],
             },
@@ -404,13 +430,38 @@ This claim appears to have originated from legitimate news sources around early 
               name: "Consensus Reporting",
               description:
                 "Multiple independent news sources reporting the same facts increases confidence in the information's accuracy.",
+              references: [
+                {
+                  title: "Why Multiple Sources Matter: Lessons from Viral Misinformation Cases",
+                  url: "https://example.com/multiple-sources-matter",
+                },
+              ],
             },
             {
               name: "Authority Bias",
               description:
                 "Information from recognized news authorities is more readily believed due to their established reputation.",
+              references: [
+                {
+                  title: "When Trusted Sources Get It Wrong: Real Examples and What We Can Learn",
+                  url: "https://example.com/trusted-sources-wrong",
+                },
+              ],
             },
           ],
+          politicalBias: {
+            biasDirection: "center" as const,
+            biasIntensity: 0.2,
+            confidence: 0.8,
+            explanation:
+              "The content demonstrates relatively balanced reporting with minimal political lean. While discussing current events, it primarily focuses on factual information from credible sources without significant ideological framing or partisan language.",
+            biasIndicators: [
+              "Neutral language and terminology",
+              "Multiple source verification",
+              "Factual reporting approach",
+            ],
+            politicalTopics: ["current events", "news reporting", "politics"],
+          },
           sources: [
             {
               url: "https://reuters.com/mock-article",
@@ -635,11 +686,18 @@ This claim appears to have originated from legitimate news sources around early 
         .split("\n")
         .filter((p) => p.trim().length > 50);
       if (paragraphs.length > 0) {
-        // Get the first substantial paragraph and truncate if needed
+        // Get the first substantial paragraph and limit its length
         const firstParagraph = paragraphs[0].trim();
-        return firstParagraph.length > 200
-          ? firstParagraph.substring(0, 200) + "..."
-          : firstParagraph;
+        // Break into sentences and take first few if it's too long
+        if (firstParagraph.length > 300) {
+          const sentences = firstParagraph.split(/[.!?]+/).filter(s => s.trim().length > 0);
+          if (sentences.length > 1) {
+            // Take first 2-3 sentences for better readability
+            const summary = sentences.slice(0, Math.min(3, sentences.length)).join('. ');
+            return summary + (sentences.length > 3 ? '.' : '');
+          }
+        }
+        return firstParagraph;
       }
     }
 
@@ -759,14 +817,14 @@ This claim appears to have originated from legitimate news sources around early 
         <p className="mx-auto mb-8 max-w-2xl text-lg text-muted-foreground md:text-xl">
           {t.heroSubtitle}
         </p>
-        <div className="mx-auto max-w-2xl space-y-4">
+        <div className="mx-auto max-w-2xl space-y-4 px-4">
           <form
             onSubmit={handleSubmit}
             className="flex gap-3 items-center justify-center"
           >
             <Input
               placeholder={t.urlPlaceholder}
-              className="flex-1 h-12 text-base min-w-0"
+              className="flex-1 h-12 text-base min-w-0 break-words"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               disabled={isLoading || isMockLoading}
@@ -819,8 +877,8 @@ This claim appears to have originated from legitimate news sources around early 
 
         {/* Results */}
         {(result || mockResult) && (
-          <div className="mx-auto max-w-4xl mt-8">
-            <Card>
+          <div className="mx-auto max-w-7xl mt-8 px-4">
+            <Card className="overflow-hidden">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   {result?.success || mockResult?.success ? (
@@ -829,9 +887,9 @@ This claim appears to have originated from legitimate news sources around early 
                     <AlertCircleIcon className="h-5 w-5 text-red-500" />
                   )}
                   {result?.success || mockResult?.success
-                    ? mockResult
-                      ? "Mock Analysis Complete"
-                      : t.analysisComplete
+                    ? result?.success
+                      ? t.analysisComplete
+                      : "Mock Analysis Complete"
                     : "Analysis Failed"}
                 </CardTitle>
               </CardHeader>
@@ -853,23 +911,33 @@ This claim appears to have originated from legitimate news sources around early 
                       <div className="space-y-6 text-left">
                         {/* Video Metadata */}
                         <div className="border-b pb-4">
-                          <h3 className="font-semibold text-lg mb-2">
+                          <h3 className="font-semibold text-lg mb-2 break-words">
                             {currentData.metadata.title}
                           </h3>
                           <div className="text-sm text-muted-foreground space-y-1">
-                            <p>Creator: {currentData.metadata.creator}</p>
-                            <p>
-                              Platform:{" "}
-                              {currentData.metadata.platform || "Unknown"}
+                            <p className="break-words">
+                              <span className="font-medium">Creator:</span> {currentData.metadata.creator}
                             </p>
                             <p>
-                              Original URL: {currentData.metadata.originalUrl}
+                              <span className="font-medium">Platform:</span>{" "}
+                              {currentData.metadata.platform || "Unknown"}
+                            </p>
+                            <p className="break-all">
+                              <span className="font-medium">Original URL:</span>{" "}
+                              <a
+                                href={currentData.metadata.originalUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline break-all"
+                              >
+                                {currentData.metadata.originalUrl}
+                              </a>
                             </p>
                             {currentData.metadata.description &&
                               currentData.metadata.description !==
                                 currentData.metadata.title && (
-                                <p>
-                                  Description:{" "}
+                                <p className="break-words">
+                                  <span className="font-medium">Description:</span>{" "}
                                   {currentData.metadata.description}
                                 </p>
                               )}
@@ -1002,37 +1070,40 @@ This claim appears to have originated from legitimate news sources around early 
 
                             {/* Overall Verification Status Summary */}
                             <Card
-                              className={`border-l-4 ${
+                              className={`border-l-4 shadow-sm ${
                                 (
                                   currentData.factCheck as unknown as FactCheckResult
                                 ).verdict === "verified"
-                                  ? "border-l-green-500"
+                                  ? "border-l-green-500 bg-green-50/50 dark:bg-green-900/10"
                                   : (
                                         currentData.factCheck as unknown as FactCheckResult
                                       ).verdict === "false"
-                                    ? "border-l-red-500"
+                                    ? "border-l-red-500 bg-red-50/50 dark:bg-red-900/10"
                                     : (
                                           currentData.factCheck as unknown as FactCheckResult
                                         ).verdict === "misleading"
-                                      ? "border-l-orange-500"
+                                      ? "border-l-orange-500 bg-orange-50/50 dark:bg-orange-900/10"
                                       : (
                                             currentData.factCheck as unknown as FactCheckResult
                                           ).verdict === "satire"
-                                        ? "border-l-purple-500"
-                                        : "border-l-gray-500"
+                                        ? "border-l-purple-500 bg-purple-50/50 dark:bg-purple-900/10"
+                                        : "border-l-gray-500 bg-gray-50/50 dark:bg-gray-900/10"
                               }`}
                             >
-                              <CardContent className="p-4">
-                                <div className="space-y-3">
-                                  <div className="flex items-start justify-between gap-3">
-                                    <div className="flex-1">
-                                      <div className="flex items-center gap-2 mb-3">
-                                        {getStatusIcon(
-                                          (
-                                            currentData.factCheck as unknown as FactCheckResult
-                                          ).verdict
-                                        )}
-                                        <h5 className="font-medium text-base">
+                              <CardContent className="p-6">
+                                <div className="space-y-4">
+                                  {/* Header Section */}
+                                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                                    <div className="flex-1 space-y-3">
+                                      <div className="flex items-center gap-3">
+                                        <div className="p-1 rounded-full bg-white dark:bg-gray-800 shadow-sm">
+                                          {getStatusIcon(
+                                            (
+                                              currentData.factCheck as unknown as FactCheckResult
+                                            ).verdict
+                                          )}
+                                        </div>
+                                        <h5 className="font-semibold text-lg">
                                           {
                                             getVerdictDescription(
                                               (
@@ -1043,18 +1114,8 @@ This claim appears to have originated from legitimate news sources around early 
                                           }
                                         </h5>
                                       </div>
-                                      <p className="text-sm text-muted-foreground mb-3">
-                                        {
-                                          getVerdictDescription(
-                                            (
-                                              currentData.factCheck as unknown as FactCheckResult
-                                            ).verdict,
-                                            currentData.factCheck as unknown as FactCheckResult
-                                          ).description
-                                        }
-                                      </p>
                                     </div>
-                                    <div className="flex items-center gap-2 shrink-0">
+                                    <div className="shrink-0 self-start">
                                       {getStatusBadge(
                                         (
                                           currentData.factCheck as unknown as FactCheckResult
@@ -1063,22 +1124,58 @@ This claim appears to have originated from legitimate news sources around early 
                                     </div>
                                   </div>
 
-                                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                    <span>
-                                      Confidence:{" "}
+                                  {/* Analysis Description */}
+                                  <div className="bg-white/60 dark:bg-gray-800/60 rounded-lg p-4 border border-gray-200/50 dark:border-gray-700/50">
+                                    <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">
                                       {
-                                        (
+                                        getVerdictDescription(
+                                          (
+                                            currentData.factCheck as unknown as FactCheckResult
+                                          ).verdict,
                                           currentData.factCheck as unknown as FactCheckResult
-                                        ).confidence
+                                        ).description
                                       }
-                                      %
-                                    </span>
-                                    <span>
-                                      Sources:{" "}
-                                      {(
-                                        currentData.factCheck as unknown as FactCheckResult
-                                      ).sources?.length || 0}
-                                    </span>
+                                    </p>
+                                  </div>
+
+                                  {/* Metrics Section */}
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-gray-200/50 dark:border-gray-700/50">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                                        <span className="text-xs font-medium text-blue-600 dark:text-blue-400">
+                                          {
+                                            (
+                                              currentData.factCheck as unknown as FactCheckResult
+                                            ).confidence
+                                          }%
+                                        </span>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Confidence</p>
+                                        <div className="w-16 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                          <div 
+                                            className="h-full bg-blue-500 rounded-full transition-all duration-300"
+                                            style={{
+                                              width: `${(currentData.factCheck as unknown as FactCheckResult).confidence}%`
+                                            }}
+                                          />
+                                        </div>
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                                        <span className="text-xs font-medium text-green-600 dark:text-green-400">
+                                          {(
+                                            currentData.factCheck as unknown as FactCheckResult
+                                          ).sources?.length || 0}
+                                        </span>
+                                      </div>
+                                      <div>
+                                        <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Sources</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-500">Used for verification</p>
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
                               </CardContent>
@@ -1090,10 +1187,13 @@ This claim appears to have originated from legitimate news sources around early 
                             ).originTracing?.hypothesizedOrigin ||
                               originTracingData?.originTracing
                                 ?.hypothesizedOrigin) && (
-                              <div className="mt-4">
-                                <p className="font-medium mb-3 text-base">
-                                  Origin Tracing & Belief Evolution:
-                                </p>
+                              <div className="mt-6">
+                                <div className="flex items-center gap-2 mb-4">
+                                  <div className="w-1 h-6 bg-gradient-to-b from-blue-500 to-purple-500 rounded-full"></div>
+                                  <h4 className="font-semibold text-lg">
+                                    Origin Tracing & Belief Evolution
+                                  </h4>
+                                </div>
                                 <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
                                   <OriginTracingDiagram
                                     originTracing={
@@ -1244,7 +1344,7 @@ This claim appears to have originated from legitimate news sources around early 
                                       currentData.factCheck as unknown as FactCheckResult
                                     ).sources.length > 0 && (
                                       <div>
-                                        <p className="font-medium mb-3 text-base">
+                                        <p className="font-medium mb-3 text-base break-words">
                                           Sources Used in Analysis:
                                         </p>
                                         <p className="text-xs font-medium mb-2 text-muted-foreground">
@@ -1266,15 +1366,23 @@ This claim appears to have originated from legitimate news sources around early 
                                                 size="sm"
                                                 variant="outline"
                                                 asChild
+                                                className="max-w-full"
                                               >
                                                 <a
                                                   href={source.url}
                                                   target="_blank"
                                                   rel="noopener noreferrer"
-                                                  className="text-xs"
+                                                  className="text-xs break-words text-left"
+                                                  style={{ 
+                                                    wordBreak: 'break-word',
+                                                    overflowWrap: 'break-word',
+                                                    hyphens: 'auto'
+                                                  }}
                                                 >
-                                                  {source.title}
-                                                  <ExternalLinkIcon className="h-3 w-3 ml-1" />
+                                                  <span className="truncate max-w-[200px] sm:max-w-none inline-block">
+                                                    {source.title}
+                                                  </span>
+                                                  <ExternalLinkIcon className="h-3 w-3 ml-1 shrink-0" />
                                                 </a>
                                               </Button>
                                             ))}
@@ -1311,6 +1419,122 @@ This claim appears to have originated from legitimate news sources around early 
                                         </div>
                                       </div>
                                     )}
+
+                                  {/* Political Bias Analysis */}
+                                  {(
+                                    currentData.factCheck as unknown as FactCheckResult
+                                  ).politicalBias && (
+                                    currentData.factCheck as unknown as FactCheckResult
+                                  ).politicalBias!.biasDirection !== "none" && (
+                                    <div>
+                                      <div className="flex items-center gap-2 mb-3">
+                                        <div className="w-1 h-6 bg-gradient-to-b from-red-500 to-blue-500 rounded-full"></div>
+                                        <h4 className="font-semibold text-base">
+                                          Political Bias Analysis
+                                        </h4>
+                                      </div>
+                                      <div className="bg-gradient-to-r from-blue-50/50 to-red-50/50 dark:from-blue-900/10 dark:to-red-900/10 p-4 rounded-lg border border-gray-200/50 dark:border-gray-700/50">
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+                                          {/* Bias Direction */}
+                                          <div className="flex items-center gap-2">
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
+                                              (currentData.factCheck as unknown as FactCheckResult).politicalBias!.biasDirection === "left"
+                                                ? "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400"
+                                                : (currentData.factCheck as unknown as FactCheckResult).politicalBias!.biasDirection === "right"
+                                                  ? "bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400"
+                                                  : "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400"
+                                            }`}>
+                                              {(currentData.factCheck as unknown as FactCheckResult).politicalBias!.biasDirection === "left" ? "L" 
+                                                : (currentData.factCheck as unknown as FactCheckResult).politicalBias!.biasDirection === "right" ? "R" 
+                                                : "C"}
+                                            </div>
+                                            <div>
+                                              <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Bias Direction</p>
+                                              <p className="text-sm font-medium capitalize">
+                                                {(currentData.factCheck as unknown as FactCheckResult).politicalBias!.biasDirection}
+                                                {(currentData.factCheck as unknown as FactCheckResult).politicalBias!.biasDirection === "center" ? " Leaning" : " Leaning"}
+                                              </p>
+                                            </div>
+                                          </div>
+
+                                          {/* Bias Intensity */}
+                                          <div className="flex items-center gap-2">
+                                            <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                                              <span className="text-xs font-medium text-orange-600 dark:text-orange-400">
+                                                {Math.round((currentData.factCheck as unknown as FactCheckResult).politicalBias!.biasIntensity * 100)}%
+                                              </span>
+                                            </div>
+                                            <div>
+                                              <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Intensity</p>
+                                              <div className="w-16 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                                <div 
+                                                  className="h-full bg-orange-500 rounded-full transition-all duration-300"
+                                                  style={{
+                                                    width: `${(currentData.factCheck as unknown as FactCheckResult).politicalBias!.biasIntensity * 100}%`
+                                                  }}
+                                                />
+                                              </div>
+                                            </div>
+                                          </div>
+
+                                          {/* Confidence */}
+                                          <div className="flex items-center gap-2">
+                                            <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                                              <span className="text-xs font-medium text-green-600 dark:text-green-400">
+                                                {Math.round((currentData.factCheck as unknown as FactCheckResult).politicalBias!.confidence * 100)}%
+                                              </span>
+                                            </div>
+                                            <div>
+                                              <p className="text-xs font-medium text-gray-600 dark:text-gray-400">Confidence</p>
+                                              <div className="w-16 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                                <div 
+                                                  className="h-full bg-green-500 rounded-full transition-all duration-300"
+                                                  style={{
+                                                    width: `${(currentData.factCheck as unknown as FactCheckResult).politicalBias!.confidence * 100}%`
+                                                  }}
+                                                />
+                                              </div>
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        {/* Explanation */}
+                                        <div className="mb-4">
+                                          <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+                                            {(currentData.factCheck as unknown as FactCheckResult).politicalBias!.explanation}
+                                          </p>
+                                        </div>
+
+                                        {/* Political Topics */}
+                                        {(currentData.factCheck as unknown as FactCheckResult).politicalBias!.politicalTopics.length > 0 && (
+                                          <div className="mb-3">
+                                            <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Political Topics:</p>
+                                            <div className="flex flex-wrap gap-1">
+                                              {(currentData.factCheck as unknown as FactCheckResult).politicalBias!.politicalTopics.slice(0, 5).map((topic: string, i: number) => (
+                                                <span key={i} className="px-2 py-1 bg-gray-200 dark:bg-gray-700 text-xs rounded-full">
+                                                  {topic}
+                                                </span>
+                                              ))}
+                                            </div>
+                                          </div>
+                                        )}
+
+                                        {/* Bias Indicators */}
+                                        {(currentData.factCheck as unknown as FactCheckResult).politicalBias!.biasIndicators.length > 0 && (
+                                          <div>
+                                            <p className="text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Key Indicators:</p>
+                                            <ul className="list-disc pl-4 space-y-1">
+                                              {(currentData.factCheck as unknown as FactCheckResult).politicalBias!.biasIndicators.slice(0, 3).map((indicator: string, i: number) => (
+                                                <li key={i} className="text-xs text-gray-600 dark:text-gray-400">
+                                                  {indicator}
+                                                </li>
+                                              ))}
+                                            </ul>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>

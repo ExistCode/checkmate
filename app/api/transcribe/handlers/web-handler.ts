@@ -8,6 +8,7 @@ import {
 import { ApiError } from "../../../../lib/api-error";
 import { scrapeWebContent } from "../../../../tools/helpers";
 import { researchAndFactCheck } from "../../../../tools/fact-checking";
+import { analyzePoliticalBias } from "../../../../tools/fact-checking/political-bias-analysis";
 import { calculateCreatorCredibilityRating } from "../../../../tools/content-analysis";
 import { logger } from "../../../../lib/logger";
 
@@ -222,6 +223,12 @@ Please fact-check the claims from this web article content, paying special atten
 
         const resultData = factCheck.data as FactCheckData;
 
+        // Perform political bias analysis
+        const politicalBiasAnalysis = await analyzePoliticalBias(
+          textToFactCheck,
+          `Web content analysis from source: ${webData?.title || 'unknown article'}`
+        );
+
         const factCheckResult: FactCheckResult = {
           verdict:
             (resultData.overallStatus as FactCheckResult["verdict"]) ||
@@ -235,6 +242,7 @@ Please fact-check the claims from this web article content, paying special atten
           flags: [],
           originTracing: resultData.originTracing,
           beliefDrivers: resultData.beliefDrivers,
+          politicalBias: politicalBiasAnalysis,
         };
 
         // Lightweight parsing fallback from reasoning text when structured fields are absent

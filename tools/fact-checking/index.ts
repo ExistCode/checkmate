@@ -6,6 +6,7 @@ export { generateCredibilityReport } from "./credibility-report";
 // Export utility functions
 export { evaluateDomainCredibility } from "./domain-credibility";
 export { analyzeVerificationStatus } from "./verification-analysis";
+export { analyzePoliticalBias } from "./political-bias-analysis";
 
 // Import tools for array export
 import { detectNewsContent } from "./news-detection";

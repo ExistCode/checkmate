@@ -10,6 +10,8 @@ export async function upsertUser(u: {
   imageUrl?: string | null;
   username?: string | null;
 }) {
+  // eslint-disable-next-line no-console
+  console.log("[db] upsertUser", { id: u.id, email: u.email });
   await db
     .insert(users)
     .values({
@@ -51,9 +53,14 @@ export async function createSession(input: {
     return true;
   } catch (err: any) {
     // Graceful fallback if sessions table hasn't been migrated yet
-    if (err?.code === "42P01" || /relation \"sessions\" does not exist/i.test(String(err?.message || ""))) {
+    if (
+      err?.code === "42P01" ||
+      /relation \"sessions\" does not exist/i.test(String(err?.message || ""))
+    ) {
       // eslint-disable-next-line no-console
-      console.warn("[auth] sessions table missing; continuing without DB session");
+      console.warn(
+        "[auth] sessions table missing; continuing without DB session"
+      );
       return false;
     }
     throw err;
@@ -236,8 +243,7 @@ export async function recordCreatorAnalysis(input: {
     return;
   }
   const newTotalAnalyses = (existing as any).totalAnalyses + 1;
-  const newTotalScore =
-    (existing as any).totalCredibilityScore + (rating ?? 0);
+  const newTotalScore = (existing as any).totalCredibilityScore + (rating ?? 0);
   const newAvg = Math.round(newTotalScore / Math.max(1, newTotalAnalyses));
   await db
     .update(creators)
@@ -245,11 +251,14 @@ export async function recordCreatorAnalysis(input: {
       creatorName: input.creatorName ?? (existing as any).creatorName ?? null,
       totalAnalyses: newTotalAnalyses,
       totalCredibilityScore: newTotalScore,
-      credibilityRating: rating == null ? (existing as any).credibilityRating : newAvg,
+      credibilityRating:
+        rating == null ? (existing as any).credibilityRating : newAvg,
       lastAnalyzedAt: now,
       updatedAt: new Date(),
     })
-    .where(and(eq(creators.id, input.id), eq(creators.platform, input.platform)));
+    .where(
+      and(eq(creators.id, input.id), eq(creators.platform, input.platform))
+    );
 }
 
 export async function listTopCreatorsByCredibility(
