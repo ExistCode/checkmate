@@ -1361,7 +1361,7 @@ export function OriginTracingDiagram({
             nodesDraggable={false}
             nodesConnectable={false}
             elementsSelectable={true}  // Enable to allow link clicks
-            panOnDrag={false}
+            panOnDrag={true}
             // Keep zoom functionality for better UX
             zoomOnScroll={true}
             zoomOnPinch={true}
