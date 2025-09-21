@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/better-auth";
+import { getAuthContext } from "@/lib/auth";
 import { createAnalysis, listAnalysesByUser } from "@/lib/db/repo";
 
-export async function GET(req: NextRequest) {
-  const session = await auth.api.getSession({ headers: req.headers });
-  if (!session)
+export async function GET(_req: NextRequest) {
+  const authContext = await getAuthContext();
+  if (!authContext)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const items = await listAnalysesByUser(session.user.id, 50);
+  const items = await listAnalysesByUser(authContext.userId, 50);
   return NextResponse.json(items);
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth.api.getSession({ headers: req.headers });
-  if (!session)
+  const authContext = await getAuthContext();
+  if (!authContext)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const body = await req.json();
   const id =
@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
   const platform = body?.metadata?.platform as string | undefined;
   await createAnalysis({
     id,
-    userId: session.user.id,
+    userId: authContext.userId,
     videoUrl: body.videoUrl,
     transcription: body?.transcription?.text ?? undefined,
     metadata: body.metadata,

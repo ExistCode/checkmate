@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/better-auth";
+import { getAuthContext } from "@/lib/auth";
 import { deleteAnalysisById, getAnalysisById } from "@/lib/db/repo";
 
 export async function GET(
@@ -16,15 +16,13 @@ export async function DELETE(
   _req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
-  const session = await auth.api.getSession({ headers: {} as any });
-  // Next.js doesn't pass headers easily into DELETE context here; prefer using req in signature
-  // Adjust signature to take req if needed in your Next version.
-  if (!session)
+  const authContext = await getAuthContext();
+  if (!authContext)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await context.params;
   const item = await getAnalysisById(id);
   if (!item) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  if ((item as any).userId !== session.user.id) {
+  if ((item as any).userId !== authContext.userId) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
   await deleteAnalysisById(id);

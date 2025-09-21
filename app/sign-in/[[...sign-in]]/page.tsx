@@ -9,6 +9,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { signInEmailPassword } from "@/lib/better-auth-client";
 import React from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function Page() {
   const router = useRouter();
@@ -105,12 +106,12 @@ export default function Page() {
           </form>
           <div className="mt-5 text-center text-sm text-muted-foreground">
             Don’t have an account?{" "}
-            <a
+            <Link
               href="/sign-up"
               className="text-foreground underline underline-offset-4"
             >
               Create one
-            </a>
+            </Link>
           </div>
         </Card>
       </div>
