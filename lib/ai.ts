@@ -25,9 +25,7 @@ export const defaultTextModelId = envModelId || (envInferenceProfile as string);
 export function textModel(modelId?: string) {
   const resolvedModelId = modelId || defaultTextModelId;
   if (!resolvedModelId) {
-    throw new Error(
-      "No Bedrock model configured: set BEDROCK_MODEL_ID or BEDROCK_INFERENCE_PROFILE_ARN/BEDROCK_INFERENCE_PROFILE_ID"
-    );
+    throw new Error("BEDROCK_MODEL_ID is not set");
   }
   return bedrock(resolvedModelId);
 }
