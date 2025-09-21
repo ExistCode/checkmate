@@ -8,7 +8,7 @@ import { useLanguage } from "@/components/language-provider";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { signOut } from "@/lib/better-auth-client";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import React from "react";
 
@@ -114,15 +114,19 @@ export function Header() {
   }: { closeMenu?: () => void; mobile?: boolean } = {}) => (
     <>
       {pathname !== "/news" && (
-        <div>
-          <Link
-            href="/news"
-            className="w-full justify-start hover:text-primary"
-          >
+        <Button
+          variant="outline"
+          size="sm"
+          className={
+            mobile ? "w-full justify-start cursor-pointer" : "cursor-pointer"
+          }
+          asChild
+        >
+          <Link href="/news" className="inline-flex items-center">
             <Newspaper className="h-4 w-4 mr-2" />
             {t.getNews}
           </Link>
-        </div>
+        </Button>
       )}
       {mobile ? (
         <>
