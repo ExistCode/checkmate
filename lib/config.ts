@@ -1,72 +1,66 @@
 import { z } from "zod";
 
 // Environment configuration schema
-const baseSchema = z.object({
-  // API Keys
-  FIRECRAWL_API_KEY: z.string().min(1, "Firecrawl API key is required"),
-  // AWS / Bedrock
-  APP_REGION: z.string().optional(),
-  AWS_REGION: z.string().optional(),
-  // Some platforms only allow lowercase keys; support `aws_region` as a source
-  aws_region: z.string().optional(),
-  BEDROCK_MODEL_ID: z
-    .string()
-    .default("anthropic.claude-3-haiku-20240307-v1:0"),
-  // DynamoDB (optional during migration)
-  DDB_TABLE_ANALYSES: z.string().optional(),
-  DDB_TABLE_CREATORS: z.string().optional(),
-  DDB_TABLE_USERS: z.string().optional(),
-  DDB_TABLE_COMMENTS: z.string().optional(),
-  // Cognito
-  COGNITO_USER_POOL_ID: z.string().min(1, "Cognito user pool id is required"),
-  COGNITO_CLIENT_ID: z.string().min(1, "Cognito client id is required"),
-  COGNITO_DOMAIN: z
-    .string()
-    .min(1, "Cognito domain is required (e.g. myapp.auth.us-east-1.amazoncognito.com)"),
-  // Expose for client-side redirects to Hosted UI
-  NEXT_PUBLIC_COGNITO_CLIENT_ID: z.string().min(1, "NEXT_PUBLIC_COGNITO_CLIENT_ID is required"),
-  NEXT_PUBLIC_COGNITO_DOMAIN: z
-    .string()
-    .min(1, "NEXT_PUBLIC_COGNITO_DOMAIN is required"),
+const baseSchema = z
+  .object({
+    // API Keys
+    FIRECRAWL_API_KEY: z.string().min(1, "Firecrawl API key is required"),
+    // AWS / Bedrock
+    APP_REGION: z.string().optional(),
+    AWS_REGION: z.string().optional(),
+    // Some platforms only allow lowercase keys; support `aws_region` as a source
+    aws_region: z.string().optional(),
+    BEDROCK_MODEL_ID: z
+      .string()
+      .default("anthropic.claude-3-haiku-20240307-v1:0"),
+    // DynamoDB (optional during migration)
+    DDB_TABLE_ANALYSES: z.string().optional(),
+    DDB_TABLE_CREATORS: z.string().optional(),
+    DDB_TABLE_USERS: z.string().optional(),
+    DDB_TABLE_COMMENTS: z.string().optional(),
+    // Local auth
+    AUTH_SECRET: z.string().min(1, "AUTH_SECRET is required"),
+    ADMIN_EMAIL: z.string().email("ADMIN_EMAIL must be a valid email"),
+    ADMIN_PASSWORD: z.string().min(1, "ADMIN_PASSWORD is required"),
 
-  // Convex (removed)
-  // CONVEX_DEPLOYMENT: z.string().min(1, "Convex deployment is required"),
-  // NEXT_PUBLIC_CONVEX_URL: z.string().url("Invalid Convex URL"),
+    // Convex (removed)
+    // CONVEX_DEPLOYMENT: z.string().min(1, "Convex deployment is required"),
+    // NEXT_PUBLIC_CONVEX_URL: z.string().url("Invalid Convex URL"),
 
-  // App Configuration
-  NODE_ENV: z
-    .enum(["development", "production", "test"])
-    .default("development"),
-  VERCEL_URL: z.string().optional(),
+    // App Configuration
+    NODE_ENV: z
+      .enum(["development", "production", "test"])
+      .default("development"),
+    VERCEL_URL: z.string().optional(),
 
-  // Rate Limiting
-  RATE_LIMIT_WINDOW_MS: z.coerce.number().default(15 * 60 * 1000), // 15 minutes
-  RATE_LIMIT_MAX_REQUESTS: z.coerce.number().default(100),
+    // Rate Limiting
+    RATE_LIMIT_WINDOW_MS: z.coerce.number().default(15 * 60 * 1000), // 15 minutes
+    RATE_LIMIT_MAX_REQUESTS: z.coerce.number().default(100),
 
-  // Timeouts (in milliseconds)
-  TRANSCRIPTION_TIMEOUT_MS: z.coerce.number().default(60000), // 1 minute
-  FACT_CHECK_TIMEOUT_MS: z.coerce.number().default(120000), // 2 minutes
-  WEB_SCRAPE_TIMEOUT_MS: z.coerce.number().default(30000), // 30 seconds
+    // Timeouts (in milliseconds)
+    TRANSCRIPTION_TIMEOUT_MS: z.coerce.number().default(60000), // 1 minute
+    FACT_CHECK_TIMEOUT_MS: z.coerce.number().default(120000), // 2 minutes
+    WEB_SCRAPE_TIMEOUT_MS: z.coerce.number().default(30000), // 30 seconds
 
-  // Feature Flags
-  ENABLE_DETAILED_LOGGING: z.coerce.boolean().default(false),
-  ENABLE_CACHE: z.coerce.boolean().default(true),
-  ENABLE_MONITORING: z.coerce.boolean().default(true),
+    // Feature Flags
+    ENABLE_DETAILED_LOGGING: z.coerce.boolean().default(false),
+    ENABLE_CACHE: z.coerce.boolean().default(true),
+    ENABLE_MONITORING: z.coerce.boolean().default(true),
 
-  // Storage / Media
-  S3_BUCKET: z
-    .string()
-    .min(1, "S3 bucket (S3_BUCKET) is required for transcription media"),
-})
-.superRefine((obj, ctx) => {
-  if (!obj.APP_REGION && !obj.AWS_REGION && !obj.aws_region) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      path: ["APP_REGION"],
-      message: "APP_REGION or AWS_REGION (or aws_region) is required",
-    });
-  }
-});
+    // Storage / Media
+    S3_BUCKET: z
+      .string()
+      .min(1, "S3 bucket (S3_BUCKET) is required for transcription media"),
+  })
+  .superRefine((obj, ctx) => {
+    if (!obj.APP_REGION && !obj.AWS_REGION && !obj.aws_region) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["APP_REGION"],
+        message: "APP_REGION or AWS_REGION (or aws_region) is required",
+      });
+    }
+  });
 
 const configSchema = baseSchema.transform((obj) => {
   const resolvedRegion = obj.APP_REGION || obj.AWS_REGION || obj.aws_region;

@@ -62,6 +62,53 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
+## 🗄️ Database: AWS RDS PostgreSQL + Drizzle ORM
+
+This project uses AWS RDS (or Aurora) PostgreSQL with Drizzle ORM and migrations. BetterAuth stores users/sessions in the same Postgres DB via the Drizzle adapter.
+
+### 1) Environment
+
+Copy `.env.local` from `env.example` and set:
+
+```
+DATABASE_URL="postgres://APP_USER:APP_PASSWORD@your-instance.abcdefg123.us-east-1.rds.amazonaws.com:5432/app_db?sslmode=require"
+BETTER_AUTH_SECRET="a-long-random-string"
+
+Auth now uses a simple email/password with a signed cookie. Configure:
+
+AUTH_SECRET="...long-random-string..."
+ADMIN_EMAIL="admin@example.com"
+ADMIN_PASSWORD="password"
+```
+
+### 2) Install deps
+
+```
+npm install
+npm install drizzle-orm postgres
+npm install -D drizzle-kit
+```
+
+### 3) Drizzle migrations
+
+```
+npx drizzle-kit generate
+npx drizzle-kit migrate
+```
+
+### 4) Run
+
+```
+npm run dev
+```
+
+### Notes
+
+- DB client is defined in `lib/db/index.ts` with SSL required for AWS RDS.
+- Schema lives in `lib/db/schema.ts`.
+- Data-access repo functions in `lib/db/repo.ts`.
+- BetterAuth configured in `lib/better-auth.ts` with Drizzle adapter.
+
 ## 📚 Developer Documentation
 
 For new developers joining the project, comprehensive documentation is available:

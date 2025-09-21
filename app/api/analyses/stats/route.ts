@@ -1,33 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ddbDoc } from "@/lib/aws";
-import { QueryCommand } from "@aws-sdk/lib-dynamodb";
-
-const TABLE = (process.env.DDB_TABLE ||
-  process.env.DDB_TABLE_ANALYSES) as string;
-if (!TABLE)
-  throw new Error(
-    "DynamoDB table name is not configured. Set DDB_TABLE or DDB_TABLE_ANALYSES."
-  );
+import { db } from "@/lib/db";
+import { analyses } from "@/lib/db/schema";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const limit = Number(searchParams.get("limit") || "500");
-  const res = await ddbDoc.send(
-    new QueryCommand({
-      TableName: TABLE,
-      IndexName: "GSI7",
-      KeyConditionExpression: "GSI7PK = :p",
-      ExpressionAttributeValues: { ":p": "ANALYSIS" },
-      ScanIndexForward: false,
-      Limit: Math.min(limit, 2000),
-    })
-  );
-  const items = res.Items ?? [];
-  const stats = items.reduce(
+  const limit = Math.min(Number(searchParams.get("limit") || "500"), 2000);
+  const items = await db.select().from(analyses).limit(limit);
+  const stats = (items as any[]).reduce(
     (acc, a: any) => {
       if (a.requiresFactCheck) acc.requiresFactCheck++;
-      if (a.newsDetection?.hasNewsContent) acc.hasNewsContent++;
-      const s = a.factCheck?.summary;
+      const news =
+        typeof a.newsDetection === "string"
+          ? JSON.parse(a.newsDetection || "null")
+          : a.newsDetection;
+      if (news?.hasNewsContent) acc.hasNewsContent++;
+      const fc =
+        typeof a.factCheck === "string"
+          ? JSON.parse(a.factCheck || "null")
+          : a.factCheck;
+      const s = fc?.summary;
       if (s) {
         acc.factCheckSummary.verifiedTrue += s.verifiedTrue || 0;
         acc.factCheckSummary.verifiedFalse += s.verifiedFalse || 0;

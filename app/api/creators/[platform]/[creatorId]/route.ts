@@ -4,7 +4,7 @@ import {
   listAnalysesByCreator,
   listCreatorComments,
   addCreatorComment,
-} from "@/lib/dynamo/repo";
+} from "@/lib/db/repo";
 import { getAuthContext } from "@/lib/auth";
 
 export async function GET(
@@ -23,10 +23,15 @@ export async function POST(
   context: { params: Promise<{ platform: string; creatorId: string }> }
 ) {
   const { creatorId, platform } = await context.params;
-  const { action } = await req.json().catch(() => ({ action: undefined }));
+  const body = await req.json().catch(() => ({}) as any);
+  const { action } = body as any;
   if (action === "listAnalyses") {
-    const { limit } = (await req.json().catch(() => ({}))) as any;
-    const items = await listAnalysesByCreator(creatorId, platform, Number(limit) || 10);
+    const { limit } = body as any;
+    const items = await listAnalysesByCreator(
+      creatorId,
+      platform,
+      Number(limit) || 10
+    );
     return NextResponse.json(items);
   }
   return NextResponse.json({ error: "Unsupported action" }, { status: 400 });
@@ -37,8 +42,8 @@ export async function PUT(
   req: NextRequest,
   context: { params: Promise<{ platform: string; creatorId: string }> }
 ) {
-  const auth = await getAuthContext();
-  if (!auth)
+  const ctx = await getAuthContext();
+  if (!ctx)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const body = await req.json();
   const content = (body?.comment || body?.content || "").toString();
@@ -52,10 +57,9 @@ export async function PUT(
     id,
     creatorId,
     platform,
-    userId: auth.userId,
+    userId: ctx.userId,
     userName: body?.userName || undefined,
     content,
-    createdAt: now,
   });
   return NextResponse.json(saved);
 }
@@ -67,6 +71,10 @@ export async function PATCH(
   // List comments (PATCH chosen to avoid GET body; could be GET with query too)
   const { limit } = (await req.json().catch(() => ({}))) as any;
   const { creatorId, platform } = await context.params;
-  const items = await listCreatorComments(creatorId, platform, Number(limit) || 50);
+  const items = await listCreatorComments(
+    creatorId,
+    platform,
+    Number(limit) || 50
+  );
   return NextResponse.json(items);
 }

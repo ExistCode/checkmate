@@ -13,7 +13,6 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { MessageSquare, Send } from "lucide-react";
 import React, { useState } from "react";
 import { useLanguage } from "@/components/language-provider";
-import { useCognitoAuth } from "@/lib/cognito/client";
 
 /**
  * Props for the CreatorComments component
@@ -41,17 +40,32 @@ export const CreatorComments = ({
   className,
 }: CreatorCommentsProps) => {
   const { t } = useLanguage();
-  const { user } = useCognitoAuth();
+  const [userEmail, setUserEmail] = React.useState<string | null>(null);
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/auth/me", { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json();
+          setUserEmail(data?.user?.email ?? null);
+        }
+      } catch {}
+    })();
+  }, []);
   const [newComment, setNewComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [comments, setComments] = useState<any[] | undefined>(undefined);
-  // Load comments from DDB-backed API
+  // Load comments from API (PATCH on base route with limit)
   React.useEffect(() => {
     setComments(undefined);
-    const qs = `?limit=50`;
     fetch(
-      `/api/creators/${encodeURIComponent(platform)}/${encodeURIComponent(creatorId)}/comments${qs}`
+      `/api/creators/${encodeURIComponent(platform)}/${encodeURIComponent(creatorId)}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ limit: 50 }),
+      }
     )
       .then((r) => r.json())
       .then((items) => setComments(items))
@@ -62,18 +76,18 @@ export const CreatorComments = ({
    * Handles comment submission
    */
   const handleSubmitComment = async () => {
-    if (!newComment.trim() || !user || isSubmitting) return;
+    if (!newComment.trim() || !userEmail || isSubmitting) return;
 
     setIsSubmitting(true);
     try {
       const res = await fetch(
-        `/api/creators/${encodeURIComponent(platform)}/${encodeURIComponent(creatorId)}/comments`,
+        `/api/creators/${encodeURIComponent(platform)}/${encodeURIComponent(creatorId)}`,
         {
-          method: "POST",
+          method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             comment: newComment.trim(),
-            userName: (user.firstName as string) || (user.username as string) || "Anonymous",
+            userName: (userEmail.split("@")[0] || "Anonymous") as string,
           }),
         }
       );
@@ -99,7 +113,7 @@ export const CreatorComments = ({
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Comment Input */}
-        {user && (
+        {userEmail && (
           <div className="space-y-3">
             <Textarea
               placeholder={t.shareThoughts}

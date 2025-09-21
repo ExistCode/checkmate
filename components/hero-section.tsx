@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { useTikTokAnalysis } from "@/lib/hooks/use-tiktok-analysis";
 import { useSaveTikTokAnalysisWithCredibility } from "@/lib/hooks/use-saved-analyses";
-import { useCognitoAuth } from "@/lib/cognito/client";
+import React from "react";
 import { toast } from "sonner";
 import { AnalysisRenderer } from "@/components/analysis-renderer";
 import { useLanguage } from "@/components/language-provider";
@@ -102,7 +102,17 @@ export function HeroSection({ initialUrl = "" }: HeroSectionProps) {
     };
   } | null>(null);
   const { analyzeTikTok, isLoading, result, reset } = useTikTokAnalysis();
-  const { isSignedIn } = useCognitoAuth();
+  const [isSignedIn, setIsSignedIn] = React.useState(false);
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/auth/me", { cache: "no-store" });
+        setIsSignedIn(res.ok && (await res.json())?.user != null);
+      } catch {
+        setIsSignedIn(false);
+      }
+    })();
+  }, []);
   const saveTikTokAnalysisWithCredibility =
     useSaveTikTokAnalysisWithCredibility();
   const router = useRouter();
@@ -846,12 +856,15 @@ This is a demonstration of how our AI fact-checking system would analyze the con
                                     currentData.factCheck as unknown as FactCheckResult
                                   ).originTracing?.hypothesizedOrigin && (
                                     <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
-                                      <p className="font-medium mb-2 text-base">Origin:</p>
+                                      <p className="font-medium mb-2 text-base">
+                                        Origin:
+                                      </p>
                                       <AnalysisRenderer
                                         content={
                                           (
                                             currentData.factCheck as unknown as FactCheckResult
-                                          ).originTracing!.hypothesizedOrigin as string
+                                          ).originTracing!
+                                            .hypothesizedOrigin as string
                                         }
                                       />
                                     </div>
@@ -870,11 +883,14 @@ This is a demonstration of how our AI fact-checking system would analyze the con
                                         <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
                                           {(
                                             currentData.factCheck as unknown as FactCheckResult
-                                          ).beliefDrivers!
-                                            .slice(0, 5)
+                                          )
+                                            .beliefDrivers!.slice(0, 5)
                                             .map((d, i) => (
                                               <li key={i}>
-                                                <span className="font-medium">{d.name}:</span> {d.description}
+                                                <span className="font-medium">
+                                                  {d.name}:
+                                                </span>{" "}
+                                                {d.description}
                                               </li>
                                             ))}
                                         </ul>

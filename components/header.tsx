@@ -7,8 +7,7 @@ import { LanguageToggle } from "@/components/language-toggle";
 import { useLanguage } from "@/components/language-provider";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { useCognitoAuth } from "@/lib/cognito/client";
-import { authClient } from "@/lib/better-auth-client";
+import { signOut } from "@/lib/better-auth-client";
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import React from "react";
@@ -159,6 +158,8 @@ export function Header() {
           {/* Desktop controls */}
           <div className="hidden sm:flex items-center gap-3">
             <Controls />
+            {/* Show signed-in email on desktop */}
+            <SignedInEmailBadge />
           </div>
           {/* Mobile menu */}
           <div className="sm:hidden">
@@ -182,44 +183,44 @@ export function Header() {
   );
 }
 
-function AuthButtons({ onClickDone, mobile }: { onClickDone?: () => void; mobile?: boolean }) {
+function AuthButtons({
+  onClickDone,
+  mobile,
+}: {
+  onClickDone?: () => void;
+  mobile?: boolean;
+}) {
   const { t } = useLanguage();
-  const { isSignedIn, user } = useCognitoAuth();
+  const [isSignedIn, setIsSignedIn] = React.useState(false);
+  const [email, setEmail] = React.useState<string>("");
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/auth/me", { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json();
+          setIsSignedIn(!!data?.user);
+          setEmail(data?.user?.email || "");
+        } else {
+          setIsSignedIn(false);
+        }
+      } catch {
+        setIsSignedIn(false);
+      }
+    })();
+  }, []);
 
-  const goSignIn = async () => {
-    await authClient.signIn.social({ provider: "cognito" });
-  };
-  const goSignUp = async () => {
-    await authClient.signIn.social({ provider: "cognito" });
-  };
   const goSignOut = async () => {
-    await authClient.signOut();
+    await signOut();
+    setIsSignedIn(false);
+    onClickDone?.();
   };
 
   if (!isSignedIn) {
     return (
       <div className="flex items-center gap-2">
-        <Button
-          variant="default"
-          size="sm"
-          className=" justify-start"
-          onClick={() => {
-            goSignIn();
-            onClickDone?.();
-          }}
-        >
-          {t.signIn}
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className=" justify-start"
-          onClick={() => {
-            goSignUp();
-            onClickDone?.();
-          }}
-        >
-          Create account
+        <Button variant="default" size="sm" className=" justify-start" asChild>
+          <Link href="/sign-in">{t.signIn}</Link>
         </Button>
       </div>
     );
@@ -227,9 +228,7 @@ function AuthButtons({ onClickDone, mobile }: { onClickDone?: () => void; mobile
 
   return mobile ? (
     <div className="w-full flex items-center justify-between">
-      <span className="truncate max-w-[10rem]">
-        {user?.username || user?.email || t.checkmate}
-      </span>
+      <span className="truncate max-w-[10rem]">{email || t.checkmate}</span>
       <Button variant="outline" size="sm" onClick={goSignOut} className="ml-2">
         Sign out
       </Button>
@@ -238,5 +237,26 @@ function AuthButtons({ onClickDone, mobile }: { onClickDone?: () => void; mobile
     <Button variant="outline" size="sm" onClick={goSignOut}>
       Sign out
     </Button>
+  );
+}
+
+function SignedInEmailBadge() {
+  const [email, setEmail] = React.useState<string>("");
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/auth/me", { cache: "no-store" });
+        if (res.ok) {
+          const data = await res.json();
+          setEmail(data?.user?.email || "");
+        }
+      } catch {}
+    })();
+  }, []);
+  if (!email) return null;
+  return (
+    <span className="text-sm text-muted-foreground truncate max-w-[16rem]">
+      {email}
+    </span>
   );
 }

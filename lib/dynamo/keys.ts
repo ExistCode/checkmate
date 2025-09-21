@@ -19,7 +19,7 @@ export const skComment = (createdAtMs: number, id: string) =>
 
 // GSI builders
 export const gsi1UserByAuth = (
-  provider: "clerk" | "cognito",
+  provider: "local",
   subject: string,
   userId: string
 ) => ({

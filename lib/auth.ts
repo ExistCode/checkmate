@@ -1,42 +1,53 @@
-import { headers, cookies } from "next/headers";
-import { jwtVerify, createRemoteJWKSet, type JWTPayload } from "jose";
+import { cookies } from "next/headers";
+import { SignJWT, jwtVerify } from "jose";
 
 export type AuthContext = {
-  provider: "cognito";
+  provider: "local";
   subject: string;
-  userId: string; // internal app user id, here we reuse subject
+  userId: string;
+  email: string;
 };
 
+const COOKIE_NAME = "app_session";
+const ISSUER = "checkmate.local";
+const AUDIENCE = "checkmate.app";
+
+function getSecretKey(): Uint8Array {
+  const secret = process.env.AUTH_SECRET || "dev-insecure-secret-change";
+  return new TextEncoder().encode(secret);
+}
+
+export async function createSessionJWT(payload: {
+  sub: string;
+  email: string;
+  expiresInSeconds?: number;
+}): Promise<string> {
+  const expiresIn = payload.expiresInSeconds ?? 60 * 60 * 24 * 7; // 7 days
+  return await new SignJWT({ email: payload.email })
+    .setProtectedHeader({ alg: "HS256" })
+    .setIssuer(ISSUER)
+    .setAudience(AUDIENCE)
+    .setSubject(payload.sub)
+    .setExpirationTime(`${expiresIn}s`)
+    .sign(getSecretKey());
+}
+
 export async function getAuthContext(): Promise<AuthContext | null> {
-  const h = await headers();
   const c = await cookies();
-  const subject = h.get("x-auth-subject");
-  if (subject) return { provider: "cognito", subject, userId: subject };
-  // Fallback: verify Cognito JWT from Authorization header or cookies
-  const bearer = h.get("authorization");
-  const token = bearer?.startsWith("Bearer ")
-    ? bearer.slice("Bearer ".length)
-    : c.get("id_token")?.value || c.get("access_token")?.value;
-
+  const token = c.get(COOKIE_NAME)?.value;
   if (!token) return null;
-
-  const region = process.env.APP_REGION || process.env.AWS_REGION;
-  const poolId = process.env.COGNITO_USER_POOL_ID;
-  const clientId =
-    process.env.COGNITO_CLIENT_ID || process.env.NEXT_PUBLIC_COGNITO_CLIENT_ID;
-  if (!region || !poolId || !clientId) return null;
-
   try {
-    const issuer = `https://cognito-idp.${region}.amazonaws.com/${poolId}`;
-    const jwks = createRemoteJWKSet(new URL(`${issuer}/.well-known/jwks.json`));
-    const { payload } = await jwtVerify(token, jwks, {
-      issuer,
-      audience: clientId,
+    const { payload } = await jwtVerify(token, getSecretKey(), {
+      issuer: ISSUER,
+      audience: AUDIENCE,
     });
-    const sub = String((payload as JWTPayload).sub);
-    if (!sub) return null;
-    return { provider: "cognito", subject: sub, userId: sub };
+    const sub = String(payload.sub || "");
+    const email = String((payload as any).email || "");
+    if (!sub || !email) return null;
+    return { provider: "local", subject: sub, userId: sub, email };
   } catch {
     return null;
   }
 }
+
+export { COOKIE_NAME };

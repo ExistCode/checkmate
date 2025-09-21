@@ -1,35 +1,35 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getAuthContext } from '@/lib/auth';
-import { buildAnalysisItem, putItem, listAnalysesByUser } from '@/lib/dynamo/repo';
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/better-auth";
+import { createAnalysis, listAnalysesByUser } from "@/lib/db/repo";
 
 export async function GET(req: NextRequest) {
-  const auth = await getAuthContext();
-  if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  const items = await listAnalysesByUser(auth.userId, 50);
+  const session = await auth.api.getSession({ headers: req.headers });
+  if (!session)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const items = await listAnalysesByUser(session.user.id, 50);
   return NextResponse.json(items);
 }
 
 export async function POST(req: NextRequest) {
-  const auth = await getAuthContext();
-  if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const session = await auth.api.getSession({ headers: req.headers });
+  if (!session)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const body = await req.json();
-  const id = (globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2));
-  const now = Date.now();
+  const id =
+    globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2);
   const platform = body?.metadata?.platform as string | undefined;
-  const creatorId = body?.metadata?.creator as string | undefined;
-  const contentCreatorCK = platform && creatorId ? `CREATOR#${creatorId}#PLATFORM#${platform}` : undefined;
-  const item = buildAnalysisItem(id, auth.userId, now, {
+  await createAnalysis({
+    id,
+    userId: session.user.id,
     videoUrl: body.videoUrl,
-    transcription: body.transcription,
+    transcription: body?.transcription?.text ?? undefined,
     metadata: body.metadata,
     newsDetection: body.newsDetection,
     factCheck: body.factCheck,
     requiresFactCheck: body.requiresFactCheck === true,
     creatorCredibilityRating: body.creatorCredibilityRating,
     contentCreatorId: body.contentCreatorId,
-    contentCreatorCK,
-  } as any);
-  await putItem(item);
+    platform,
+  });
   return NextResponse.json({ id });
 }
-
