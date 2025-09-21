@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { useTikTokAnalysis } from "@/lib/hooks/use-tiktok-analysis";
 import { useSaveTikTokAnalysisWithCredibility } from "@/lib/hooks/use-saved-analyses";
+import { useAnimatedProgress } from "@/lib/hooks/use-animated-progress";
 import React from "react";
 import { toast } from "sonner";
 import { AnalysisRenderer } from "@/components/analysis-renderer";
@@ -126,6 +127,13 @@ export function HeroSection({ initialUrl = "" }: HeroSectionProps) {
     };
   } | null>(null);
   const { analyzeTikTok, isLoading, result, reset } = useTikTokAnalysis();
+  const {
+    progress,
+    isAnimating,
+    startProgress,
+    stopProgress,
+    resetProgress,
+  } = useAnimatedProgress({ duration: 30000 }); // 30 seconds
   const [isSignedIn, setIsSignedIn] = React.useState(false);
   React.useEffect(() => {
     (async () => {
@@ -137,6 +145,7 @@ export function HeroSection({ initialUrl = "" }: HeroSectionProps) {
       }
     })();
   }, []);
+
   const saveTikTokAnalysisWithCredibility =
     useSaveTikTokAnalysisWithCredibility();
   const router = useRouter();
@@ -168,6 +177,7 @@ export function HeroSection({ initialUrl = "" }: HeroSectionProps) {
     router.replace(`?${params.toString()}`);
 
     toast.info(t.analysisStarted);
+    startProgress(); // Start the 30-second progress animation
     await analyzeTikTok(url.trim());
   };
 
@@ -182,6 +192,7 @@ export function HeroSection({ initialUrl = "" }: HeroSectionProps) {
     setIsDetailedAnalysisExpanded(false);
     setIsSaved(false);
     setMockResult(null);
+    resetProgress();
     reset();
   };
 
@@ -193,6 +204,7 @@ export function HeroSection({ initialUrl = "" }: HeroSectionProps) {
 
     setIsMockLoading(true);
     toast.info("Running Mock Analysis (Free!)");
+    startProgress(); // Start the 30-second progress animation
 
     // Simulate API processing time
     await new Promise((resolve) => setTimeout(resolve, 3000));
@@ -744,7 +756,7 @@ This claim appears to have originated from legitimate news sources around early 
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <Progress value={70} />
+              <Progress value={progress} />
               <div className="text-base text-muted-foreground text-center">
                 <p>
                   We are transcribing the video, detecting news content, and
@@ -1150,7 +1162,7 @@ This claim appears to have originated from legitimate news sources around early 
                                     Origin Tracing & Belief Evolution
                                   </h4>
                                 </div>
-                                <div className="bg-gray-50 dark:bg-gray-900 py-4 px-0 sm:px-4 rounded-lg">
+                                <div className="rounded-lg">
                                   <OriginTracingDiagram
                                     originTracing={
                                       originTracingData?.originTracing ||
