@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createSessionJWT, COOKIE_NAME } from "@/lib/auth";
-import { upsertUser } from "@/lib/db/repo";
+import { upsertUser, createSession } from "@/lib/db/repo";
 
 export async function POST(req: Request) {
   const { email, password } = await req.json().catch(() => ({}));
@@ -9,11 +9,26 @@ export async function POST(req: Request) {
   }
   // Ensure user exists (id = email for now)
   await upsertUser({ id: email, email, username: email.split("@")[0] });
-  const jwt = await createSessionJWT({ sub: email, email });
+  const sessionId = crypto.randomUUID();
+  const maxAgeSec = 60 * 60 * 24 * 7; // 7 days
+  const expiresAt = new Date(Date.now() + maxAgeSec * 1000);
+  const ua = req.headers.get("user-agent");
+  // Note: Depending on proxy, use x-forwarded-for; fall back to req headers
+  const ip = (req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "")
+    .split(",")[0]
+    .trim();
+  await createSession({
+    id: sessionId,
+    userId: email,
+    userAgent: ua,
+    ipAddress: ip || null,
+    expiresAt,
+  });
+  const jwt = await createSessionJWT({ sub: email, email, sessionId });
   const res = new NextResponse(null, { status: 204 });
   res.headers.append(
     "Set-Cookie",
-    `${COOKIE_NAME}=${jwt}; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=${60 * 60 * 24 * 7}`
+    `${COOKIE_NAME}=${jwt}; Path=/; HttpOnly; SameSite=Lax; Secure; Max-Age=${maxAgeSec}`
   );
   return res;
 }

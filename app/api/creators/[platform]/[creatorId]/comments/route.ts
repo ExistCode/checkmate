@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { addCreatorComment, listCreatorComments } from "@/lib/dynamo/repo";
+import { addCreatorComment, listCreatorComments } from "@/lib/db/repo";
 import { getAuthContext } from "@/lib/auth";
 
 export async function GET(
@@ -35,7 +35,6 @@ export async function POST(
     userId: auth.userId,
     userName: body?.userName || undefined,
     content,
-    createdAt: now,
   });
   return NextResponse.json(saved);
 }

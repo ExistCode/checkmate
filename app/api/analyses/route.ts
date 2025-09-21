@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthContext } from "@/lib/auth";
-import { createAnalysis, listAnalysesByUser } from "@/lib/db/repo";
+import {
+  createAnalysis,
+  listAnalysesByUser,
+  recordCreatorAnalysis,
+} from "@/lib/db/repo";
 
 export async function GET(_req: NextRequest) {
   const authContext = await getAuthContext();
@@ -62,5 +66,17 @@ export async function POST(req: NextRequest) {
     contentCreatorId: body.contentCreatorId,
     platform,
   });
+  // Update creator aggregates if creator/platform present
+  if (body.contentCreatorId && platform) {
+    await recordCreatorAnalysis({
+      id: String(body.contentCreatorId),
+      platform,
+      credibilityRating:
+        body.creatorCredibilityRating == null
+          ? null
+          : Math.round(Number(body.creatorCredibilityRating)),
+      at: new Date(),
+    });
+  }
   return NextResponse.json({ id });
 }

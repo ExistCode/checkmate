@@ -23,6 +23,20 @@ export const users = pgTable(
   (t) => [index("users_email_idx").on(t.email)]
 );
 
+export const sessions = pgTable(
+  "sessions",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id").notNull(),
+    userAgent: text("user_agent"),
+    ipAddress: text("ip_address"),
+    createdAt: timestamp("created_at", { mode: "date" }).defaultNow().notNull(),
+    expiresAt: timestamp("expires_at", { mode: "date" }),
+    revokedAt: timestamp("revoked_at", { mode: "date" }),
+  },
+  (t) => [index("sessions_user_idx").on(t.userId, t.createdAt)]
+);
+
 export const creators = pgTable(
   "creators",
   {

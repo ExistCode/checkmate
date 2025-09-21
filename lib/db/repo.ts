@@ -1,6 +1,6 @@
 import { and, desc, eq } from "drizzle-orm";
 import { db } from "./index";
-import { analyses, creators, comments, users } from "./schema";
+import { analyses, creators, comments, users, sessions } from "./schema";
 
 export async function upsertUser(u: {
   id: string;
@@ -31,6 +31,34 @@ export async function upsertUser(u: {
         updatedAt: new Date(),
       },
     });
+}
+
+export async function createSession(input: {
+  id: string;
+  userId: string;
+  userAgent?: string | null;
+  ipAddress?: string | null;
+  expiresAt?: Date | null;
+}) {
+  await db.insert(sessions).values({
+    id: input.id,
+    userId: input.userId,
+    userAgent: input.userAgent ?? null,
+    ipAddress: input.ipAddress ?? null,
+    expiresAt: input.expiresAt ?? null,
+  });
+}
+
+export async function getSessionById(id: string) {
+  const rows = await db.select().from(sessions).where(eq(sessions.id, id)).limit(1);
+  return rows[0] ?? null;
+}
+
+export async function revokeSession(id: string) {
+  await db
+    .update(sessions)
+    .set({ revokedAt: new Date() })
+    .where(eq(sessions.id, id));
 }
 
 export async function createAnalysis(input: {
@@ -157,6 +185,48 @@ export async function getCreator(creatorId: string, platform: string) {
   return rows[0] ?? null;
 }
 
+export async function recordCreatorAnalysis(input: {
+  id: string; // creator id
+  platform: string;
+  creatorName?: string;
+  credibilityRating?: number | null;
+  at?: Date;
+}) {
+  const existing = await getCreator(input.id, input.platform);
+  const now = input.at ?? new Date();
+  const rating =
+    input.credibilityRating == null
+      ? null
+      : Math.round(Number(input.credibilityRating));
+  if (!existing) {
+    await db.insert(creators).values({
+      id: input.id,
+      platform: input.platform,
+      creatorName: input.creatorName ?? null,
+      credibilityRating: rating ?? 0,
+      totalAnalyses: 1,
+      totalCredibilityScore: rating ?? 0,
+      lastAnalyzedAt: now,
+    });
+    return;
+  }
+  const newTotalAnalyses = (existing as any).totalAnalyses + 1;
+  const newTotalScore =
+    (existing as any).totalCredibilityScore + (rating ?? 0);
+  const newAvg = Math.round(newTotalScore / Math.max(1, newTotalAnalyses));
+  await db
+    .update(creators)
+    .set({
+      creatorName: input.creatorName ?? (existing as any).creatorName ?? null,
+      totalAnalyses: newTotalAnalyses,
+      totalCredibilityScore: newTotalScore,
+      credibilityRating: rating == null ? (existing as any).credibilityRating : newAvg,
+      lastAnalyzedAt: now,
+      updatedAt: new Date(),
+    })
+    .where(and(eq(creators.id, input.id), eq(creators.platform, input.platform)));
+}
+
 export async function listTopCreatorsByCredibility(
   platform: string,
   limit = 10
@@ -204,12 +274,16 @@ export async function addCreatorComment(input: {
   userName?: string;
   content: string;
 }) {
-  await db.insert(comments).values({
-    id: input.id,
-    creatorId: input.creatorId,
-    platform: input.platform,
-    userId: input.userId,
-    userName: input.userName ?? null,
-    content: input.content,
-  });
+  const rows = await db
+    .insert(comments)
+    .values({
+      id: input.id,
+      creatorId: input.creatorId,
+      platform: input.platform,
+      userId: input.userId,
+      userName: input.userName ?? null,
+      content: input.content,
+    })
+    .returning();
+  return rows[0] ?? null;
 }

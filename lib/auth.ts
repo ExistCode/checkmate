@@ -6,6 +6,7 @@ export type AuthContext = {
   subject: string;
   userId: string;
   email: string;
+  sessionId?: string;
 };
 
 const COOKIE_NAME = "app_session";
@@ -20,10 +21,13 @@ function getSecretKey(): Uint8Array {
 export async function createSessionJWT(payload: {
   sub: string;
   email: string;
+  sessionId?: string; // persisted DB session id
   expiresInSeconds?: number;
 }): Promise<string> {
   const expiresIn = payload.expiresInSeconds ?? 60 * 60 * 24 * 7; // 7 days
-  return await new SignJWT({ email: payload.email })
+  const claims: Record<string, unknown> = { email: payload.email };
+  if (payload.sessionId) claims["sid"] = payload.sessionId;
+  return await new SignJWT(claims)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuer(ISSUER)
     .setAudience(AUDIENCE)
@@ -43,8 +47,33 @@ export async function getAuthContext(): Promise<AuthContext | null> {
     });
     const sub = String(payload.sub || "");
     const email = String((payload as any).email || "");
+    const sessionId = (payload as any).sid
+      ? String((payload as any).sid)
+      : undefined;
     if (!sub || !email) return null;
-    return { provider: "local", subject: sub, userId: sub, email };
+
+    // If a session id is present, ensure it's valid in DB
+    if (sessionId) {
+      try {
+        const { getSessionById } = await import("@/lib/db/repo");
+        const s = await getSessionById(sessionId);
+        if (!s) return null;
+        const now = new Date();
+        if (s.revokedAt || (s.expiresAt && s.expiresAt < now)) return null;
+        if (s.userId !== sub) return null;
+      } catch {
+        // If DB lookup fails, treat as unauthenticated to be safe
+        return null;
+      }
+    }
+
+    return {
+      provider: "local",
+      subject: sub,
+      userId: sub,
+      email,
+      sessionId,
+    };
   } catch {
     return null;
   }
