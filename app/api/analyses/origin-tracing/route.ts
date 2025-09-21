@@ -23,7 +23,11 @@ export async function POST(req: NextRequest) {
         firstSeenDates?: Array<{ source: string; date?: string; url?: string }> | null;
         propagationPaths?: string[] | null;
       } | null;
-      beliefDrivers?: Array<{ name?: string; description?: string }>;
+      beliefDrivers?: Array<{
+        name?: string;
+        description?: string;
+        references?: Array<{ title?: string; url?: string }>;
+      }>;
       sources?: Array<{ title?: string; url?: string }>;
       verdict?: 'verified' | 'misleading' | 'false' | 'unverified' | 'satire';
       claim?: string;
@@ -32,12 +36,17 @@ export async function POST(req: NextRequest) {
 
 Task: Read the following analysis text and produce a compact JSON with:
 - originTracing: { hypothesizedOrigin: string | null, firstSeenDates: Array<{source: string, date?: string, url?: string}> | null, propagationPaths: string[] | null }
-- beliefDrivers: Array<{ name: string, description: string }>
+- beliefDrivers: Array<{ name: string, description: string, references?: Array<{ title: string, url: string }> }>
 - sources: Array<{ title: string, url: string }>
 - verdict: one of [verified, misleading, false, unverified, satire]
 - claim: the current claim summarized as one sentence
 
-Keep arrays small (<=6 items each). Prefer credible sources.
+Guidelines (optimize for rich, comprehensive node coverage without fabrication):
+- Extract AS MANY distinct items as present in the text; do not invent facts.
+- Targets: firstSeenDates up to 15, propagationPaths up to 15, beliefDrivers up to 10, sources up to 15.
+- Include dates and URLs whenever available. Prefer diverse platforms (forums, social, influencers, blogs, news, messaging).
+- If the text mentions studies or articles that support belief drivers, include up to 2 references per driver.
+- Deduplicate obvious duplicates while preserving distinct sources.
 
 TEXT START\n${content}\nTEXT END
 
@@ -49,7 +58,7 @@ Return ONLY valid JSON.`;
         model: textModel(),
         system: 'Extract structured origin-tracing data for visualization. Be precise and grounded in the text.',
         prompt,
-        maxTokens: DEFAULT_ANALYSIS_MAX_TOKENS,
+        maxTokens: Math.max(DEFAULT_ANALYSIS_MAX_TOKENS, 4000),
         temperature: DEFAULT_ANALYSIS_TEMPERATURE,
       });
       // Best-effort JSON parse
@@ -65,25 +74,125 @@ Return ONLY valid JSON.`;
 
     // Merge AI output with parsed fallback
     const aiOT: AiOutput = (ai ?? {}) as AiOutput;
+    // Merge helpers
+    const uniqBy = <T, K extends string | number>(items: T[], keyFn: (t: T) => K) => {
+      const map = new Map<K, T>();
+      for (const it of items) {
+        const k = keyFn(it);
+        if (!map.has(k)) map.set(k, it);
+      }
+      return Array.from(map.values());
+    };
+
+    // Merge origin tracing pieces for richer detail
+    const firstSeenDatesMerged = uniqBy(
+      [
+        ...((aiOT.originTracing?.firstSeenDates || []) as Array<{ source: string; date?: string; url?: string }>),
+        ...((parsed.originTracing.firstSeenDates || []) as Array<{ source: string; date?: string; url?: string }>),
+      ],
+      (d) => `${(d.source || '').toLowerCase()}|${d.date || ''}|${d.url || ''}`
+    ).slice(0, 15);
+
+    const propagationPathsMerged = Array.from(
+      new Set<string>([
+        ...((aiOT.originTracing?.propagationPaths || []) as string[]),
+        ...((parsed.originTracing.propagationPaths || []) as string[]),
+      ].map((s) => String(s)))
+    ).slice(0, 15);
+
+    // Merge belief drivers by name (case-insensitive), prefer AI descriptions and references
+    const aiDrivers = (Array.isArray(aiOT.beliefDrivers) ? aiOT.beliefDrivers : []) as Array<{ name?: string; description?: string; references?: Array<{ title?: string; url?: string }> }>;
+    const parsedDrivers = parsed.beliefDrivers || [];
+    const driversMap = new Map<string, { name: string; description: string; references?: Array<{ title: string; url: string }> }>();
+    for (const d of parsedDrivers) {
+      if (!d?.name) continue;
+      driversMap.set(d.name.toLowerCase(), { name: d.name, description: d.description, references: d.references });
+    }
+    for (const b of aiDrivers) {
+      const name = String(b.name || '').trim();
+      if (!name) continue;
+      const key = name.toLowerCase();
+      const cleanedRefs = Array.isArray(b.references)
+        ? b.references
+            .map((r) => ({
+              title: typeof r?.title === 'string' && r.title.trim() ? String(r.title) : undefined,
+              url: typeof r?.url === 'string' && r.url.trim() ? String(r.url) : undefined,
+            }))
+            .filter((r) => Boolean(r.title) && Boolean(r.url))
+            .slice(0, 2) as Array<{ title: string; url: string }>
+        : undefined;
+      const existing = driversMap.get(key);
+      if (existing) {
+        driversMap.set(key, {
+          name,
+          description: String(b.description || existing.description || ''),
+          references: cleanedRefs || existing.references,
+        });
+      } else {
+        driversMap.set(key, {
+          name,
+          description: String(b.description || ''),
+          references: cleanedRefs,
+        });
+      }
+    }
+    const beliefDriversMerged = Array.from(driversMap.values()).slice(0, 10);
+
+    // Merge sources by URL
+    const aiSources = ((aiOT.sources || []) as Array<{ url?: string; title?: string }>).map((s) => ({
+      url: String(s.url || ''),
+      title: String(s.title || s.url || 'Source'),
+      credibility: s.url ? computeCredibilityFromUrl(String(s.url)) : 60,
+    }));
+    const mergedSources = uniqBy(
+      [
+        ...aiSources,
+        ...((parsed.sources || []) as Array<{ url: string; title: string; credibility: number }>),
+      ],
+      (s) => s.url
+    ).slice(0, 15);
+
+    // Extract all links from content (markdown + bare URLs)
+    const extractAllLinks = (text: string): Array<{ url: string; title?: string }> => {
+      const links: Array<{ url: string; title?: string }> = [];
+      // markdown links [title](url)
+      const md = /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g;
+      let m: RegExpExecArray | null;
+      while ((m = md.exec(text)) !== null) {
+        links.push({ title: m[1], url: m[2] });
+      }
+      // bare URLs
+      const bare = /(https?:\/\/[\w\-._~:/?#[\]@!$&'()*+,;=%]+)(?![^\s]*\))/g;
+      let b: RegExpExecArray | null;
+      while ((b = bare.exec(text)) !== null) {
+        const url = b[1];
+        // skip if already added via markdown
+        if (!links.some((l) => l.url === url)) {
+          try {
+            const u = new URL(url);
+            links.push({ url, title: u.hostname.replace(/^www\./, '') });
+          } catch {}
+        }
+      }
+      // dedupe by url
+      const seen = new Set<string>();
+      return links.filter((l) => (seen.has(l.url) ? false : (seen.add(l.url), true)));
+    };
+
+    const allLinks = extractAllLinks(content).slice(0, 50);
+
     const merged = {
       originTracing: {
         hypothesizedOrigin: aiOT.originTracing?.hypothesizedOrigin ?? parsed.originTracing.hypothesizedOrigin ?? undefined,
-        firstSeenDates: aiOT.originTracing?.firstSeenDates ?? parsed.originTracing.firstSeenDates ?? undefined,
-        propagationPaths: aiOT.originTracing?.propagationPaths ?? parsed.originTracing.propagationPaths ?? undefined,
+        firstSeenDates: firstSeenDatesMerged.length ? firstSeenDatesMerged : undefined,
+        propagationPaths: propagationPathsMerged.length ? propagationPathsMerged : undefined,
       },
-      beliefDrivers: Array.isArray(aiOT.beliefDrivers) && aiOT.beliefDrivers.length
-        ? aiOT.beliefDrivers.map((b: { name?: string; description?: string }) => ({ name: String(b.name || ''), description: String(b.description || '') }))
-        : parsed.beliefDrivers,
-      sources: Array.isArray(aiOT.sources) && aiOT.sources.length
-        ? aiOT.sources.map((s: { url?: string; title?: string }) => ({
-            url: String(s.url || ''),
-            title: String(s.title || s.url || 'Source'),
-            credibility: s.url ? computeCredibilityFromUrl(String(s.url)) : 60,
-          }))
-        : parsed.sources,
+      beliefDrivers: beliefDriversMerged,
+      sources: mergedSources,
       verdict: aiOT.verdict ?? parsed.verdict,
       content,
       claim: typeof aiOT.claim === 'string' ? aiOT.claim : undefined,
+      allLinks,
     };
 
     return NextResponse.json(merged);

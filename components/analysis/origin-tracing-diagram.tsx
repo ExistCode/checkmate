@@ -14,6 +14,7 @@ import {
   Handle,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
+import { computeCredibilityFromUrl } from '@/lib/analysis/parseOriginTracing';
 import { Card } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { 
@@ -59,6 +60,7 @@ interface OriginTracingDiagramProps {
   sources?: FactCheckSource[];
   verdict?: 'verified' | 'misleading' | 'false' | 'unverified' | 'satire';
   content?: string;
+  allLinks?: Array<{ url: string; title?: string }>;
 }
 
 // Custom node components
@@ -69,6 +71,7 @@ interface NodeData {
   url?: string;
   name?: string;
   description?: string;
+  references?: Array<{ title: string; url: string }>;
 }
 
 // Helper function to get platform/source icons
@@ -290,7 +293,7 @@ const SourceNode = ({ data }: { data: NodeData }) => (
 );
 
 const BeliefDriverNode = ({ data }: { data: NodeData }) => (
-  <div className="px-5 py-4 bg-violet-50 border-2 border-violet-200 rounded-xl shadow-lg min-w-[220px] max-w-[320px]">
+  <div className="px-5 py-4 bg-violet-50 border-2 border-violet-200 rounded-xl shadow-lg min-w-[220px] max-w-[360px]">
     {/* All-direction handles */}
     <Handle type="target" position={Position.Top} id="top" />
     <Handle type="source" position={Position.Bottom} id="bottom" />
@@ -304,7 +307,23 @@ const BeliefDriverNode = ({ data }: { data: NodeData }) => (
       <div className="font-semibold text-violet-900 text-sm">Why People Believe</div>
     </div>
     <div className="text-sm text-violet-800 font-medium mb-2">{data.name}</div>
-    <div className="text-xs text-violet-700 leading-relaxed">{data.description}</div>
+    <div className="text-xs text-violet-700 leading-relaxed mb-2">{data.description}</div>
+    {Array.isArray(data.references) && data.references.length > 0 && (
+      <div className="mt-2 space-y-1">
+        {data.references.slice(0, 2).map((ref, idx) => (
+          <a
+            key={idx}
+            href={ref.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block text-[11px] text-violet-800 underline break-all"
+            title={ref.title}
+          >
+            {ref.title}
+          </a>
+        ))}
+      </div>
+    )}
   </div>
 );
 
@@ -322,58 +341,68 @@ export function OriginTracingDiagram({
   sources = [],
   verdict = 'unverified',
   content = '',
+  allLinks = [],
 }: OriginTracingDiagramProps) {
   const { nodes: initialNodes, edges: initialEdges } = useMemo(() => {
     const nodes: Node[] = [];
     const edges: Edge[] = [];
     let nodeId = 0;
 
-    // Define layout constants with completely separate sections and guaranteed spacing
+    // Define layout constants with better spacing for more nodes
     const LAYOUT = {
       // Main claim at center - locked position
-      center: { x: 1000, y: 600 },
+      center: { x: 1200, y: 700 },
       
       // Origin section (top center) - above claim
-      origin: { x: 1000, y: 150 },
+      origin: { x: 1200, y: 150 },
       
       // Timeline section (left side) - well separated from center
       timeline: { 
-        startX: 100, 
-        y: 300, 
-        spacing: 320,
-        maxPerRow: 3,
-        rowSpacing: 150
+        startX: 50, 
+        y: 250, 
+        spacing: 350,
+        maxPerRow: 4,
+        rowSpacing: 180
       },
       
       // Propagation section (right side) - well separated from center
       propagation: { 
-        startX: 1500, 
-        y: 300, 
-        spacing: 320,
-        maxPerRow: 3,
-        rowSpacing: 150
+        startX: 1700, 
+        y: 250, 
+        spacing: 350,
+        maxPerRow: 4,
+        rowSpacing: 180
       },
       
       // Sources section (bottom center) - below claim with good spacing
       sources: { 
-        startX: 600, 
-        y: 950, 
-        spacing: 380,
-        maxPerRow: 4,
-        rowSpacing: 150
+        startX: 700, 
+        y: 1100, 
+        spacing: 400,
+        maxPerRow: 5,
+        rowSpacing: 180
       },
       
-      // Belief drivers section (far right) - isolated from other sections
+      // All links section (bottom far-left)
+      allLinks: {
+        startX: 50,
+        y: 1100,
+        spacing: 300,
+        maxPerRow: 5,
+        rowSpacing: 180,
+      },
+
+      // Belief drivers section (far right) - better vertical spacing
       beliefs: { 
-        x: 2000, 
-        startY: 400, 
-        spacing: 180
+        x: 2400, 
+        startY: 350, 
+        spacing: 200
       },
       
       // Node dimensions for overlap prevention
-      nodeWidth: 300,
-      nodeHeight: 140,
-      minSpacing: 50 // Minimum gap between nodes
+      nodeWidth: 350,
+      nodeHeight: 160,
+      minSpacing: 80 // Increased minimum gap between nodes
     };
 
     // Create the central claim node
@@ -507,6 +536,40 @@ export function OriginTracingDiagram({
       });
     }
 
+    // Add all links nodes in bottom far-left section
+    if (allLinks.length > 0) {
+      allLinks.forEach((link, index) => {
+        const linkNodeId = `alllink-${nodeId++}`;
+        const row = Math.floor(index / LAYOUT.allLinks.maxPerRow);
+        const col = index % LAYOUT.allLinks.maxPerRow;
+        const x = LAYOUT.allLinks.startX + col * LAYOUT.allLinks.spacing;
+        const y = LAYOUT.allLinks.y + row * LAYOUT.allLinks.rowSpacing;
+
+        nodes.push({
+          id: linkNodeId,
+          type: 'source',
+          position: { x, y },
+          data: {
+            label: link.title || link.url,
+            credibility: computeCredibilityFromUrl(link.url),
+            url: link.url,
+          },
+        });
+
+        edges.push({
+          id: `${claimNodeId}-${linkNodeId}`,
+          source: claimNodeId,
+          sourceHandle: 'bottom',
+          target: linkNodeId,
+          targetHandle: 'top',
+          type: 'smoothstep',
+          markerEnd: { type: MarkerType.ArrowClosed },
+          label: 'linked',
+          style: { stroke: '#64748b', strokeWidth: 1.5, strokeDasharray: '4,4' },
+        });
+      });
+    }
+
     // Add belief driver nodes in far right section
     beliefDrivers.forEach((driver, index) => {
       const driverNodeId = `belief-${nodeId++}`;
@@ -518,7 +581,8 @@ export function OriginTracingDiagram({
         position: { x: LAYOUT.beliefs.x, y: yPosition },
         data: { 
           name: driver.name, 
-          description: driver.description 
+          description: driver.description,
+          references: driver.references
         },
       });
 
@@ -536,7 +600,7 @@ export function OriginTracingDiagram({
     });
 
     return { nodes, edges };
-  }, [originTracing, beliefDrivers, sources, verdict, content]);
+  }, [originTracing, beliefDrivers, sources, verdict, content, allLinks]);
 
   const [nodes, , onNodesChange] = useNodesState(initialNodes);
   const [edges, , onEdgesChange] = useEdgesState(initialEdges);
@@ -550,7 +614,7 @@ export function OriginTracingDiagram({
   }
 
   return (
-    <Card className="w-full h-[1000px] p-6 shadow-xl">
+    <Card className="w-full h-[1200px] p-6 shadow-xl">
       <div className="h-full">
         <div className="mb-6">
           <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
@@ -570,15 +634,15 @@ export function OriginTracingDiagram({
             onConnect={onConnect}
             nodeTypes={nodeTypes}
             fitView
-            fitViewOptions={{ padding: 0.1, includeHiddenNodes: false }}
+            fitViewOptions={{ padding: 0.15, includeHiddenNodes: false }}
             minZoom={0.1}
-            maxZoom={1.0}
+            maxZoom={1.2}
             attributionPosition="bottom-left"
-            defaultViewport={{ x: 0, y: 0, zoom: 0.3 }}
+            defaultViewport={{ x: 0, y: 0, zoom: 0.4 }}
             proOptions={{ hideAttribution: false }}
           >
             <Controls showInteractive={false} />
-            <Background gap={20} size={1} color="#f1f5f9" />
+            <Background gap={25} size={1} color="#f1f5f9" />
           </ReactFlow>
         </div>
         <div className="mt-3 text-xs text-muted-foreground flex items-center gap-2">

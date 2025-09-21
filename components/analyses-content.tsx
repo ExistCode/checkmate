@@ -356,16 +356,18 @@ export function AnalysisPage({ analysisId }: { analysisId: string }) {
                         </div>
                       )}
 
-                    {/* Origin Tracing Diagram */}
-                    {(analysis.factCheck.originTracing?.hypothesizedOrigin || 
+                    {/* Origin Tracing Diagram - Auto-generated or legacy data */}
+                    {((analysis as any).originTracingData || 
+                      analysis.factCheck.originTracing?.hypothesizedOrigin || 
                       analysis.factCheck.beliefDrivers?.length || 
                       analysis.factCheck.sources?.length) && (
                       <OriginTracingDiagram
-                        originTracing={analysis.factCheck.originTracing}
-                        beliefDrivers={analysis.factCheck.beliefDrivers}
-                        sources={analysis.factCheck.sources}
-                        verdict={analysis.factCheck.verdict}
-                        content={analysis.factCheck.content}
+                        originTracing={(analysis as any).originTracingData?.originTracing || analysis.factCheck.originTracing}
+                        beliefDrivers={(analysis as any).originTracingData?.beliefDrivers || analysis.factCheck.beliefDrivers}
+                        sources={(analysis as any).originTracingData?.sources || analysis.factCheck.sources}
+                        verdict={(analysis as any).originTracingData?.verdict || analysis.factCheck.verdict}
+                        content={(analysis as any).originTracingData?.claim || analysis.factCheck.content}
+                        allLinks={(analysis as any).originTracingData?.allLinks || (analysis as any).allLinks || []}
                       />
                     )}
 

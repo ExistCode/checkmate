@@ -25,9 +25,11 @@ import { type OriginTracingResult } from "@/lib/analysis/parseOriginTracing";
  * - - Bullet points
  * - - **Sub-headers:** with content
  */
+type DiagramData = OriginTracingResult & { claim?: string; allLinks?: Array<{ url: string; title?: string }> };
+
 export function AnalysisRenderer({ content }: { content: string }) {
   // Conditional diagram generation state (diagram generated on demand)
-  const [diagramData, setDiagramData] = useState<OriginTracingResult | null>(null);
+  const [diagramData, setDiagramData] = useState<DiagramData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,7 +51,9 @@ export function AnalysisRenderer({ content }: { content: string }) {
         beliefDrivers: data.beliefDrivers,
         sources: data.sources,
         verdict: data.verdict,
-      } as OriginTracingResult);
+        claim: data.claim,
+        allLinks: data.allLinks,
+      } as DiagramData);
     } catch (e) {
       const message = e instanceof Error ? e.message : "Something went wrong";
       setError(message);
@@ -331,7 +335,8 @@ export function AnalysisRenderer({ content }: { content: string }) {
           beliefDrivers={diagramData.beliefDrivers}
           sources={diagramData.sources}
           verdict={diagramData.verdict}
-          content={content}
+          content={diagramData.claim ?? content}
+          allLinks={diagramData.allLinks}
         />
       )}
       {renderContent(content)}
