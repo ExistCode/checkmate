@@ -294,7 +294,12 @@ Return only the search query, nothing else.`;
        */
       let factCheckAnalysis = "";
       if (searchContent.trim()) {
-        const factCheckPrompt = `You are a fact-checker analyzing content against credible sources. 
+        const factCheckPrompt = `You are a fact-checker analyzing content against credible sources. Your analysis will be structured to populate the following UI sections in order:
+
+1. **DETAILED ANALYSIS SECTION**: Core fact-checking findings and evidence
+2. **SOURCES SECTION**: Information about sources used (handled separately)
+3. **ORIGIN TRACING SECTION**: Investigation of claim origins and propagation
+4. **BELIEF DRIVERS SECTION**: Psychology behind why people believe this
 
 Content to verify:
 Title: ${title || "N/A"}
@@ -304,25 +309,39 @@ ${context ? `Context: ${context}` : ""}
 Credible sources found:
 ${searchContent}
 
-Please provide a comprehensive fact-check analysis with:
+Please provide a comprehensive fact-check analysis structured as follows:
+
+**FOR THE DETAILED ANALYSIS SECTION (displayed first):**
 1. Overall verification status (verified/misleading/unverifiable)
 2. Evidence from the credible sources provided
 3. Specific claims that are accurate or inaccurate
 4. Reasoning behind your assessment
 5. Any biases or credibility concerns
-6. If the content is false or misleading, add:
-   - Likely origin of the claim (with earliest known appearances, links, or citations)
-   - Propagation paths (platforms/influencers/forums) if identifiable
-   - Psychology/science-backed reasons why people might believe this (e.g., confirmation bias, motivated reasoning, narrative appeal), with references if possible
+6. Comprehensive analysis of the evidence
 
-Format your response clearly with sections for:
-- Conclusion and Summary
-- Accurate Information 
-- Misleading Information (if any)
-- Source Analysis
-- Reasoning
-- Origin Tracing (if applicable)
-- Why People Believe This (with scientific references if available)`;
+**FOR THE ORIGIN TRACING SECTION (displayed after sources):**
+If the content is false, misleading, or contains dubious claims, provide detailed:
+- Likely origin of the claim (with earliest known appearances, links, or citations)
+- How the claim evolved and spread across platforms
+- Specific transformations of the narrative on different platforms
+- Timeline of propagation if identifiable
+- Key moments in the claim's evolution
+
+**FOR THE BELIEF DRIVERS SECTION (displayed after origin tracing):**
+Psychology/science-backed reasons why people might believe this content:
+- Cognitive biases at play (e.g., confirmation bias, motivated reasoning)
+- Narrative appeal and emotional triggers
+- Social and cultural factors
+- Academic references where possible
+
+Format your response clearly with these sections:
+- **Conclusion and Summary** (for Detailed Analysis section)
+- **Evidence Analysis** (for Detailed Analysis section)
+- **Source Credibility Assessment** (for Detailed Analysis section)
+- **Reasoning and Methodology** (for Detailed Analysis section)
+`;
+// - **Origin Tracing Investigation** (separate section - detailed investigation of claim origins, evolution, and propagation)
+// - **Why People Believe This** (separate section - psychological drivers with scientific references)
 
         const { text } = await generateText({
           model: textModel(),

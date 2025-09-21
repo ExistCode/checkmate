@@ -19,6 +19,9 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   BookmarkIcon,
+  ShieldIcon,
+  SearchIcon,
+  SmileIcon,
 } from "lucide-react";
 import { useTikTokAnalysis } from "@/lib/hooks/use-tiktok-analysis";
 import { useSaveTikTokAnalysisWithCredibility } from "@/lib/hooks/use-saved-analyses";
@@ -26,6 +29,7 @@ import React from "react";
 import { toast } from "sonner";
 import { AnalysisRenderer } from "@/components/analysis-renderer";
 import { useLanguage } from "@/components/language-provider";
+import { OriginTracingDiagram } from "@/components/analysis/origin-tracing-diagram";
 import Link from "next/link";
 
 interface HeroSectionProps {
@@ -33,20 +37,20 @@ interface HeroSectionProps {
 }
 
 interface FactCheckResult {
-  verdict: string;
+  verdict: "verified" | "misleading" | "false" | "unverified" | "satire";
   confidence: number;
   explanation: string;
-  sources: Array<{
-    title: string;
-    url: string;
-    source: string;
-    relevance?: number;
-  }>;
   content: string;
-  isVerified: boolean;
-  error?: string;
+  sources: Array<{
+    url: string;
+    title: string;
+    credibility: number;
+  }>;
+  flags: string[];
   originTracing?: {
     hypothesizedOrigin?: string;
+    firstSeenDates?: Array<{ source: string; date?: string; url?: string }>;
+    propagationPaths?: string[];
   };
   beliefDrivers?: Array<{
     name: string;
@@ -58,6 +62,8 @@ interface FactCheckResult {
 export function HeroSection({ initialUrl = "" }: HeroSectionProps) {
   const [url, setUrl] = useState(initialUrl);
   const [isAnalysisExpanded, setIsAnalysisExpanded] = useState(false);
+  const [isDetailedAnalysisExpanded, setIsDetailedAnalysisExpanded] =
+    useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [isMockLoading, setIsMockLoading] = useState(false);
@@ -66,7 +72,11 @@ export function HeroSection({ initialUrl = "" }: HeroSectionProps) {
     data: {
       transcription: {
         text: string;
-        segments: unknown[];
+        segments: Array<{
+          start: number;
+          end: number;
+          text: string;
+        }>;
         language: string;
       };
       metadata: {
@@ -77,17 +87,30 @@ export function HeroSection({ initialUrl = "" }: HeroSectionProps) {
         platform: string;
       };
       factCheck: {
-        verdict: string;
+        verdict: "verified" | "misleading" | "false" | "unverified" | "satire";
         confidence: number;
         explanation: string;
         content: string;
         sources: Array<{
           title: string;
           url: string;
-          source: string;
-          relevance: number;
+          credibility: number;
         }>;
-        isVerified: boolean;
+        flags: string[];
+        originTracing?: {
+          hypothesizedOrigin?: string;
+          firstSeenDates?: Array<{
+            source: string;
+            date?: string;
+            url?: string;
+          }>;
+          propagationPaths?: string[];
+        };
+        beliefDrivers?: Array<{
+          name: string;
+          description: string;
+          references?: Array<{ title: string; url: string }>;
+        }>;
       };
       requiresFactCheck: boolean;
       creatorCredibilityRating: number;
@@ -95,10 +118,11 @@ export function HeroSection({ initialUrl = "" }: HeroSectionProps) {
         hasNewsContent: boolean;
         confidence: number;
         newsKeywordsFound: string[];
-        potentialClaims: number;
+        potentialClaims: string[];
         needsFactCheck: boolean;
         contentType: string;
       };
+      originTracingData?: any;
     };
   } | null>(null);
   const { analyzeTikTok, isLoading, result, reset } = useTikTokAnalysis();
@@ -155,6 +179,7 @@ export function HeroSection({ initialUrl = "" }: HeroSectionProps) {
   const handleReset = () => {
     setUrl("");
     setIsAnalysisExpanded(false);
+    setIsDetailedAnalysisExpanded(false);
     setIsSaved(false);
     setMockResult(null);
     reset();
@@ -167,12 +192,12 @@ export function HeroSection({ initialUrl = "" }: HeroSectionProps) {
     }
 
     setIsMockLoading(true);
-    toast.info("🧪 Running Mock Analysis (Free!)");
+    toast.info("Running Mock Analysis (Free!)");
 
     // Simulate API processing time
     await new Promise((resolve) => setTimeout(resolve, 3000));
 
-    // Generate realistic mock data
+    // Generate realistic mock data matching current API structure
     const mockData = {
       success: true,
       data: {
@@ -185,7 +210,18 @@ Key simulated claims found:
 - Mock claim about current events
 - Simulated statement requiring verification
 - Example of content that would trigger fact-checking processes`,
-          segments: [],
+          segments: [
+            {
+              start: 0,
+              end: 10,
+              text: "This is a mock transcription of the content",
+            },
+            {
+              start: 10,
+              end: 25,
+              text: "demonstrating how the system would extract spoken words",
+            },
+          ],
           language: "en",
         },
         metadata: {
@@ -219,6 +255,9 @@ This is a demonstration of how our AI fact-checking system would analyze the con
 - **Confidence Level**: High confidence based on multiple corroborating sources
 - **Recommendation**: Content appears to be factually accurate based on available evidence
 
+**Origin Tracing Investigation:**
+This claim appears to have originated from legitimate news sources around early 2024. The information has been consistently reported by multiple credible outlets including Reuters, Associated Press, and BBC News. The claim has maintained accuracy as it spread through various social media platforms.
+
 **Note**: This is a demonstration using mock data to show the analysis process without incurring API costs.`,
           content:
             "Mock content summary: The system has analyzed the provided URL and generated this demo fact-check result to show how real analysis would work.",
@@ -226,23 +265,59 @@ This is a demonstration of how our AI fact-checking system would analyze the con
             {
               title: "Mock Reuters Article",
               url: "https://reuters.com/mock-article",
-              source: "reuters.com",
-              relevance: 0.9,
+              credibility: 0.9,
             },
             {
               title: "Mock BBC News Report",
               url: "https://bbc.com/mock-report",
-              source: "bbc.com",
-              relevance: 0.85,
+              credibility: 0.85,
             },
             {
               title: "Mock AP News Coverage",
               url: "https://apnews.com/mock-coverage",
-              source: "apnews.com",
-              relevance: 0.8,
+              credibility: 0.8,
             },
           ],
-          isVerified: true,
+          flags: ["verified-sources", "high-credibility"],
+          originTracing: {
+            hypothesizedOrigin:
+              "This claim appears to have originated from a Reuters report published in early 2024, which was then picked up by other major news outlets including BBC and Associated Press. The information has been consistently verified across multiple credible sources.",
+            firstSeenDates: [
+              {
+                source: "Reuters",
+                date: "2024-01-15",
+                url: "https://reuters.com/mock-article",
+              },
+              {
+                source: "BBC News",
+                date: "2024-01-16",
+                url: "https://bbc.com/mock-report",
+              },
+              {
+                source: "Associated Press",
+                date: "2024-01-16",
+                url: "https://apnews.com/mock-coverage",
+              },
+            ],
+            propagationPaths: ["news-media", "twitter", "tiktok", "facebook"],
+          },
+          beliefDrivers: [
+            {
+              name: "Source Credibility",
+              description:
+                "People trust this information because it comes from established, reputable news organizations with strong fact-checking standards.",
+            },
+            {
+              name: "Consensus Reporting",
+              description:
+                "Multiple independent news sources reporting the same facts increases confidence in the information's accuracy.",
+            },
+            {
+              name: "Authority Bias",
+              description:
+                "Information from recognized news authorities is more readily believed due to their established reputation.",
+            },
+          ],
         },
         requiresFactCheck: true,
         creatorCredibilityRating: 7.2,
@@ -250,16 +325,136 @@ This is a demonstration of how our AI fact-checking system would analyze the con
           hasNewsContent: true,
           confidence: 0.9,
           newsKeywordsFound: ["breaking", "reports", "officials"],
-          potentialClaims: 3,
+          potentialClaims: [
+            "Mock claim about current events",
+            "Simulated statement requiring verification",
+            "Example of content that would trigger fact-checking processes",
+          ],
           needsFactCheck: true,
           contentType: "news_factual",
+        },
+        originTracingData: {
+          originTracing: {
+            hypothesizedOrigin:
+              "This claim appears to have originated from a Reuters report published in early 2024, which was then picked up by other major news outlets including BBC and Associated Press. The information has been consistently verified across multiple credible sources.",
+            firstSeenDates: [
+              {
+                source: "Reuters",
+                date: "2024-01-15",
+                url: "https://reuters.com/mock-article",
+              },
+              {
+                source: "BBC News",
+                date: "2024-01-16",
+                url: "https://bbc.com/mock-report",
+              },
+              {
+                source: "Associated Press",
+                date: "2024-01-16",
+                url: "https://apnews.com/mock-coverage",
+              },
+            ],
+            evolutionSteps: [
+              {
+                platform: "Reuters",
+                transformation:
+                  "Original breaking news report with official sources and verification",
+                impact: "Established the factual foundation",
+                date: "2024-01-15",
+              },
+              {
+                platform: "BBC News",
+                transformation:
+                  "Independent verification and additional context added",
+                impact:
+                  "Increased credibility through second-source confirmation",
+                date: "2024-01-16",
+              },
+              {
+                platform: "Twitter",
+                transformation: "Simplified into shareable social media format",
+                impact: "Reached broader audience while maintaining accuracy",
+                date: "2024-01-17",
+              },
+              {
+                platform: "TikTok",
+                transformation:
+                  "Adapted into short-form video content with visual aids",
+                impact: "Made information accessible to younger demographics",
+                date: "2024-01-18",
+              },
+            ],
+            propagationPaths: ["news-media", "twitter", "tiktok", "facebook"],
+          },
+          beliefDrivers: [
+            {
+              name: "Source Credibility",
+              description:
+                "People trust this information because it comes from established, reputable news organizations with strong fact-checking standards.",
+              references: [
+                {
+                  title: "Trust in News Media Research",
+                  url: "https://example.com/trust-research",
+                },
+              ],
+            },
+            {
+              name: "Consensus Reporting",
+              description:
+                "Multiple independent news sources reporting the same facts increases confidence in the information's accuracy.",
+            },
+            {
+              name: "Authority Bias",
+              description:
+                "Information from recognized news authorities is more readily believed due to their established reputation.",
+            },
+          ],
+          sources: [
+            {
+              url: "https://reuters.com/mock-article",
+              title: "Mock Reuters Article",
+              source: "Reuters",
+              credibility: 0.9,
+            },
+            {
+              url: "https://bbc.com/mock-report",
+              title: "Mock BBC News Report",
+              source: "BBC News",
+              credibility: 0.85,
+            },
+            {
+              url: "https://apnews.com/mock-coverage",
+              title: "Mock AP News Coverage",
+              source: "Associated Press",
+              credibility: 0.8,
+            },
+          ],
+          verdict: "verified",
+          content:
+            "Mock content summary: The system has analyzed the provided URL and generated this demo fact-check result to show how real analysis would work.",
+          claim:
+            "This is a mock demonstration of how claims would be analyzed and verified through the fact-checking system.",
+          allLinks: [
+            {
+              url: "https://reuters.com/mock-article",
+              title: "Mock Reuters Article",
+            },
+            {
+              url: "https://bbc.com/mock-report",
+              title: "Mock BBC News Report",
+            },
+            {
+              url: "https://apnews.com/mock-coverage",
+              title: "Mock AP News Coverage",
+            },
+          ],
         },
       },
     };
 
     setMockResult(mockData);
     setIsMockLoading(false);
-    toast.success("🎭 Mock Analysis Complete! (No API costs incurred)");
+    toast.success("Mock Analysis Complete! (No API costs incurred)");
   };
 
   const handleSaveAnalysis = async () => {
@@ -317,18 +512,14 @@ This is a demonstration of how our AI fact-checking system would analyze the con
                 .explanation,
               content: (result.data.factCheck as unknown as FactCheckResult)
                 .content,
-              isVerified: (result.data.factCheck as unknown as FactCheckResult)
-                .isVerified,
               sources: (
                 result.data.factCheck as unknown as FactCheckResult
               ).sources?.map((source) => ({
                 title: source.title,
                 url: source.url,
-                source: source.source,
-                relevance: source.relevance,
+                source: source.title, // Use title as source fallback for compatibility
+                relevance: source.credibility,
               })),
-              error: (result.data.factCheck as unknown as FactCheckResult)
-                .error,
             }
           : undefined,
         requiresFactCheck: result.data.requiresFactCheck,
@@ -351,14 +542,16 @@ This is a demonstration of how our AI fact-checking system would analyze the con
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "true":
-        return <CheckCircleIcon className="h-4 w-4 text-green-500" />;
+      case "verified":
+        return <CheckCircleIcon className="h-4 w-4 text-green-600" />;
       case "false":
-        return <XCircleIcon className="h-4 w-4 text-red-500" />;
+        return <XCircleIcon className="h-4 w-4 text-red-600" />;
       case "misleading":
-        return <AlertTriangleIcon className="h-4 w-4 text-yellow-500" />;
-      case "unverifiable":
+        return <AlertTriangleIcon className="h-4 w-4 text-orange-500" />;
+      case "unverified":
         return <AlertCircleIcon className="h-4 w-4 text-gray-500" />;
+      case "satire":
+        return <span className="text-purple-500 text-sm">🎭</span>;
       default:
         return <AlertCircleIcon className="h-4 w-4 text-blue-500" />;
     }
@@ -366,28 +559,138 @@ This is a demonstration of how our AI fact-checking system would analyze the con
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "true":
+      case "verified":
         return (
-          <Badge className="bg-green-100 text-green-800">Verified True</Badge>
+          <Badge className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 border border-green-300 dark:border-green-700">
+            <ShieldCheckIcon className="h-3 w-3 mr-1" />
+            Verified
+          </Badge>
         );
       case "false":
-        return <Badge className="bg-red-100 text-red-800">False</Badge>;
+        return (
+          <Badge className="bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 border border-red-300 dark:border-red-700">
+            <XCircleIcon className="h-3 w-3 mr-1" />
+            False Information
+          </Badge>
+        );
       case "misleading":
         return (
-          <Badge className="bg-yellow-100 text-yellow-800">Misleading</Badge>
+          <Badge className="bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 border border-orange-300 dark:border-orange-700">
+            <AlertTriangleIcon className="h-3 w-3 mr-1" />
+            Misleading Content
+          </Badge>
         );
-      case "unverifiable":
+      case "unverified":
         return (
-          <Badge className="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200">
-            Unverifiable
+          <Badge className="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-300 dark:border-gray-600">
+            <AlertCircleIcon className="h-3 w-3 mr-1" />
+            Insufficient Evidence
+          </Badge>
+        );
+      case "satire":
+        return (
+          <Badge className="bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 border border-purple-300 dark:border-purple-700">
+            <SmileIcon className="h-3 w-3 mr-1" />
+            Satirical Content
           </Badge>
         );
       default:
         return (
-          <Badge className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
-            Needs Verification
+          <Badge className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 border border-blue-300 dark:border-blue-600">
+            <SearchIcon className="h-3 w-3 mr-1" />
+            Under Review
           </Badge>
         );
+    }
+  };
+
+  const getAnalysisSummary = (factCheck: FactCheckResult) => {
+    // Extract a meaningful summary from the analysis content
+    if (factCheck.explanation) {
+      // Get first meaningful paragraph from explanation
+      const paragraphs = factCheck.explanation
+        .split("\n")
+        .filter((p) => p.trim().length > 50);
+      if (paragraphs.length > 0) {
+        // Get the first substantial paragraph and truncate if needed
+        const firstParagraph = paragraphs[0].trim();
+        return firstParagraph.length > 200
+          ? firstParagraph.substring(0, 200) + "..."
+          : firstParagraph;
+      }
+    }
+
+    // Fallback to content if explanation is not available
+    if (factCheck.content) {
+      const cleanContent = factCheck.content.trim();
+      return cleanContent.length > 200
+        ? cleanContent.substring(0, 200) + "..."
+        : cleanContent;
+    }
+
+    // Final fallback
+    return "Analysis summary is being generated based on credible sources and fact-checking methodology.";
+  };
+
+  const getVerdictDescription = (
+    status: string,
+    factCheck?: FactCheckResult
+  ) => {
+    // If we have factCheck data, use the actual analysis summary for description
+    const analysisDescription = factCheck
+      ? getAnalysisSummary(factCheck)
+      : null;
+
+    switch (status) {
+      case "verified":
+        return {
+          title: "Content Verified",
+          description:
+            analysisDescription ||
+            "Clear evidence supports the claims made in this content. Multiple credible sources confirm the accuracy of the information presented.",
+        };
+      case "true":
+        return {
+          title: "Factually Accurate",
+          description:
+            analysisDescription ||
+            "The information presented is factually correct based on available evidence from reliable sources.",
+        };
+      case "false":
+        return {
+          title: "False Information",
+          description:
+            analysisDescription ||
+            "The claims made in this content are factually incorrect and contradicted by credible evidence from reliable sources.",
+        };
+      case "misleading":
+        return {
+          title: "Misleading Content",
+          description:
+            analysisDescription ||
+            "While some elements may be factually correct, the content lacks important context, presents selective information, or draws unsupported conclusions that could mislead viewers.",
+        };
+      case "unverifiable":
+        return {
+          title: "Insufficient Evidence",
+          description:
+            analysisDescription ||
+            "There is not enough credible evidence available to verify or debunk the claims made in this content. Further investigation may be needed.",
+        };
+      case "satire":
+        return {
+          title: "Satirical Content",
+          description:
+            analysisDescription ||
+            "This content appears to be satirical, parody, or comedy in nature. It should not be interpreted as factual information.",
+        };
+      default:
+        return {
+          title: "Overall Verification Status",
+          description:
+            analysisDescription ||
+            "This content is currently being analyzed. The verification process is ongoing and results will be updated when available.",
+        };
     }
   };
 
@@ -472,7 +775,7 @@ This is a demonstration of how our AI fact-checking system would analyze the con
               {isMockLoading ? (
                 <LoaderIcon className="h-4 w-4 mr-2 animate-spin" />
               ) : (
-                <span className="mr-2">🧪</span>
+                <ShieldIcon className="h-4 w-4 mr-2" />
               )}
               {isMockLoading ? "Running Mock..." : "Try Mock Demo (Free!)"}
             </Button>
@@ -485,8 +788,8 @@ This is a demonstration of how our AI fact-checking system would analyze the con
           {/* Mock Demo Description */}
           <div className="text-center">
             <p className="text-xs text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-900/20 px-4 py-2 rounded-lg inline-block">
-              💡 The mock demo simulates the full analysis process with
-              realistic data—perfect for testing without API costs!
+              The mock demo simulates the full analysis process with realistic
+              data—perfect for testing without API costs!
             </p>
           </div>
         </div>
@@ -504,7 +807,7 @@ This is a demonstration of how our AI fact-checking system would analyze the con
                   )}
                   {result?.success || mockResult?.success
                     ? mockResult
-                      ? "🧪 Mock Analysis Complete"
+                      ? "Mock Analysis Complete"
                       : t.analysisComplete
                     : "Analysis Failed"}
                 </CardTitle>
@@ -520,6 +823,9 @@ This is a demonstration of how our AI fact-checking system would analyze the con
                         : mockResult?.data;
                     if (!currentData) return null;
 
+                    // Safely access optional origin tracing augmentation when present (in mock data)
+                    const originTracingData = (currentData as any)
+                      ?.originTracingData;
                     return (
                       <div className="space-y-6 text-left">
                         {/* Video Metadata */}
@@ -609,28 +915,6 @@ This is a demonstration of how our AI fact-checking system would analyze the con
                                 {currentData.requiresFactCheck ? "Yes" : "No"}
                               </Badge>
                             </div>
-                            {currentData.factCheck && (
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm">
-                                  Verification Status:
-                                </span>
-                                <Badge
-                                  variant={
-                                    (
-                                      currentData.factCheck as unknown as FactCheckResult
-                                    ).isVerified
-                                      ? "default"
-                                      : "outline"
-                                  }
-                                >
-                                  {(
-                                    currentData.factCheck as unknown as FactCheckResult
-                                  ).isVerified
-                                    ? "Verified"
-                                    : "Pending"}
-                                </Badge>
-                              </div>
-                            )}
                           </div>
                         </div>
 
@@ -693,12 +977,12 @@ This is a demonstration of how our AI fact-checking system would analyze the con
                               Fact-Check Results
                             </h4>
 
-                            {/* Overall Verification Status */}
+                            {/* Overall Verification Status Summary */}
                             <Card
                               className={`border-l-4 ${
                                 (
                                   currentData.factCheck as unknown as FactCheckResult
-                                ).verdict === "true"
+                                ).verdict === "verified"
                                   ? "border-l-green-500"
                                   : (
                                         currentData.factCheck as unknown as FactCheckResult
@@ -707,37 +991,47 @@ This is a demonstration of how our AI fact-checking system would analyze the con
                                     : (
                                           currentData.factCheck as unknown as FactCheckResult
                                         ).verdict === "misleading"
-                                      ? "border-l-yellow-500"
-                                      : "border-l-gray-500"
+                                      ? "border-l-orange-500"
+                                      : (
+                                            currentData.factCheck as unknown as FactCheckResult
+                                          ).verdict === "satire"
+                                        ? "border-l-purple-500"
+                                        : "border-l-gray-500"
                               }`}
                             >
                               <CardContent className="p-4">
                                 <div className="space-y-3">
                                   <div className="flex items-start justify-between gap-3">
                                     <div className="flex-1">
-                                      <h5 className="font-medium text-sm mb-2">
-                                        Overall Verification Status
-                                      </h5>
-                                      <div className="text-sm text-muted-foreground">
-                                        {(
-                                          currentData.factCheck as unknown as FactCheckResult
-                                        ).content && (
-                                          <AnalysisRenderer
-                                            content={
+                                      <div className="flex items-center gap-2 mb-3">
+                                        {getStatusIcon(
+                                          (
+                                            currentData.factCheck as unknown as FactCheckResult
+                                          ).verdict
+                                        )}
+                                        <h5 className="font-medium text-base">
+                                          {
+                                            getVerdictDescription(
                                               (
                                                 currentData.factCheck as unknown as FactCheckResult
-                                              ).content
-                                            }
-                                          />
-                                        )}
+                                              ).verdict,
+                                              currentData.factCheck as unknown as FactCheckResult
+                                            ).title
+                                          }
+                                        </h5>
                                       </div>
+                                      <p className="text-sm text-muted-foreground mb-3">
+                                        {
+                                          getVerdictDescription(
+                                            (
+                                              currentData.factCheck as unknown as FactCheckResult
+                                            ).verdict,
+                                            currentData.factCheck as unknown as FactCheckResult
+                                          ).description
+                                        }
+                                      </p>
                                     </div>
                                     <div className="flex items-center gap-2 shrink-0">
-                                      {getStatusIcon(
-                                        (
-                                          currentData.factCheck as unknown as FactCheckResult
-                                        ).verdict
-                                      )}
                                       {getStatusBadge(
                                         (
                                           currentData.factCheck as unknown as FactCheckResult
@@ -746,12 +1040,122 @@ This is a demonstration of how our AI fact-checking system would analyze the con
                                     </div>
                                   </div>
 
+                                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                    <span>
+                                      Confidence:{" "}
+                                      {
+                                        (
+                                          currentData.factCheck as unknown as FactCheckResult
+                                        ).confidence
+                                      }
+                                      %
+                                    </span>
+                                    <span>
+                                      Sources:{" "}
+                                      {(
+                                        currentData.factCheck as unknown as FactCheckResult
+                                      ).sources?.length || 0}
+                                    </span>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+
+                            {/* Origin Tracing Diagram - Moved here from detailed analysis */}
+                            {((
+                              currentData.factCheck as unknown as FactCheckResult
+                            ).originTracing?.hypothesizedOrigin ||
+                              originTracingData?.originTracing
+                                ?.hypothesizedOrigin) && (
+                              <div className="mt-4">
+                                <p className="font-medium mb-3 text-base">
+                                  Origin Tracing & Belief Evolution:
+                                </p>
+                                <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+                                  <OriginTracingDiagram
+                                    originTracing={
+                                      originTracingData?.originTracing ||
+                                      (
+                                        currentData.factCheck as unknown as FactCheckResult
+                                      ).originTracing
+                                    }
+                                    beliefDrivers={
+                                      originTracingData?.beliefDrivers ||
+                                      (
+                                        currentData.factCheck as unknown as FactCheckResult
+                                      ).beliefDrivers
+                                    }
+                                    sources={
+                                      originTracingData?.sources &&
+                                      originTracingData?.sources.length > 0
+                                        ? originTracingData.sources
+                                        : (
+                                            currentData.factCheck as unknown as FactCheckResult
+                                          ).sources?.map((source) => ({
+                                            url: source.url,
+                                            title: source.title,
+                                            source: source.title,
+                                            credibility:
+                                              source.credibility || 0.5,
+                                          }))
+                                    }
+                                    verdict={
+                                      (
+                                        currentData.factCheck as unknown as FactCheckResult
+                                      ).verdict as
+                                        | "verified"
+                                        | "misleading"
+                                        | "false"
+                                        | "unverified"
+                                        | "satire"
+                                    }
+                                    content={
+                                      originTracingData?.claim ||
+                                      (
+                                        currentData.factCheck as unknown as FactCheckResult
+                                      ).content
+                                    }
+                                    allLinks={originTracingData?.allLinks}
+                                  />
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Expandable Detailed Analysis Section */}
+                            <div className="mt-4">
+                              <button
+                                onClick={() =>
+                                  setIsDetailedAnalysisExpanded(
+                                    !isDetailedAnalysisExpanded
+                                  )
+                                }
+                                className="w-full text-left p-4 bg-gray-50 dark:bg-gray-900 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors border border-gray-200 dark:border-gray-700"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <span className="font-medium text-base">
+                                    View Detailed Analysis
+                                  </span>
+                                  {isDetailedAnalysisExpanded ? (
+                                    <ChevronUpIcon className="h-5 w-5 text-muted-foreground" />
+                                  ) : (
+                                    <ChevronDownIcon className="h-5 w-5 text-muted-foreground" />
+                                  )}
+                                </div>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  Explore comprehensive analysis including
+                                  sources, methodology, and detailed reasoning
+                                </p>
+                              </button>
+
+                              {isDetailedAnalysisExpanded && (
+                                <div className="mt-4 space-y-4 border-t pt-4">
+                                  {/* Detailed Analysis Content */}
                                   {(
                                     currentData.factCheck as unknown as FactCheckResult
                                   ).explanation && (
                                     <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
                                       <p className="font-medium mb-3 text-base">
-                                        Analysis:
+                                        Detailed Analysis:
                                       </p>
                                       <div>
                                         {(() => {
@@ -795,12 +1199,12 @@ This is a demonstration of how our AI fact-checking system would analyze the con
                                             {isAnalysisExpanded ? (
                                               <>
                                                 <ChevronUpIcon className="h-4 w-4" />
-                                                Show less
+                                                Show less analysis
                                               </>
                                             ) : (
                                               <>
                                                 <ChevronDownIcon className="h-4 w-4" />
-                                                Show more
+                                                Show full analysis
                                               </>
                                             )}
                                           </button>
@@ -809,6 +1213,7 @@ This is a demonstration of how our AI fact-checking system would analyze the con
                                     </div>
                                   )}
 
+                                  {/* Sources Section */}
                                   {(
                                     currentData.factCheck as unknown as FactCheckResult
                                   ).sources &&
@@ -816,20 +1221,22 @@ This is a demonstration of how our AI fact-checking system would analyze the con
                                       currentData.factCheck as unknown as FactCheckResult
                                     ).sources.length > 0 && (
                                       <div>
-                                        <p className="text-xs font-medium mb-2">
-                                          Sources (
+                                        <p className="font-medium mb-3 text-base">
+                                          Sources Used in Analysis:
+                                        </p>
+                                        <p className="text-xs font-medium mb-2 text-muted-foreground">
                                           {
                                             (
                                               currentData.factCheck as unknown as FactCheckResult
                                             ).sources.length
                                           }{" "}
-                                          found):
+                                          sources found
                                         </p>
                                         <div className="flex flex-wrap gap-2">
                                           {(
                                             currentData.factCheck as unknown as FactCheckResult
                                           ).sources
-                                            .slice(0, 5)
+                                            .slice(0, 10)
                                             .map((source, sourceIndex) => (
                                               <Button
                                                 key={sourceIndex}
@@ -843,7 +1250,7 @@ This is a demonstration of how our AI fact-checking system would analyze the con
                                                   rel="noopener noreferrer"
                                                   className="text-xs"
                                                 >
-                                                  {source.source}
+                                                  {source.title}
                                                   <ExternalLinkIcon className="h-3 w-3 ml-1" />
                                                 </a>
                                               </Button>
@@ -852,73 +1259,38 @@ This is a demonstration of how our AI fact-checking system would analyze the con
                                       </div>
                                     )}
 
-                                  {(
-                                    currentData.factCheck as unknown as FactCheckResult
-                                  ).originTracing?.hypothesizedOrigin && (
-                                    <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
-                                      <p className="font-medium mb-2 text-base">
-                                        Origin:
-                                      </p>
-                                      <AnalysisRenderer
-                                        content={
-                                          (
-                                            currentData.factCheck as unknown as FactCheckResult
-                                          ).originTracing!
-                                            .hypothesizedOrigin as string
-                                        }
-                                      />
-                                    </div>
-                                  )}
-
+                                  {/* Belief Drivers - Text summary after diagram */}
                                   {(
                                     currentData.factCheck as unknown as FactCheckResult
                                   ).beliefDrivers &&
                                     (
                                       currentData.factCheck as unknown as FactCheckResult
                                     ).beliefDrivers!.length > 0 && (
-                                      <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
-                                        <p className="font-medium mb-2 text-base">
+                                      <div>
+                                        <p className="font-medium mb-3 text-base">
                                           Why People Believe This:
                                         </p>
-                                        <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
-                                          {(
-                                            currentData.factCheck as unknown as FactCheckResult
-                                          )
-                                            .beliefDrivers!.slice(0, 5)
-                                            .map((d, i) => (
-                                              <li key={i}>
-                                                <span className="font-medium">
-                                                  {d.name}:
-                                                </span>{" "}
-                                                {d.description}
-                                              </li>
-                                            ))}
-                                        </ul>
+                                        <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+                                          <ul className="list-disc pl-5 space-y-2 text-sm text-muted-foreground">
+                                            {(
+                                              currentData.factCheck as unknown as FactCheckResult
+                                            )
+                                              .beliefDrivers!.slice(0, 10)
+                                              .map((d, i) => (
+                                                <li key={i}>
+                                                  <span className="font-medium">
+                                                    {d.name}:
+                                                  </span>{" "}
+                                                  {d.description}
+                                                </li>
+                                              ))}
+                                          </ul>
+                                        </div>
                                       </div>
                                     )}
-
-                                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                    <span>
-                                      Confidence:{" "}
-                                      {
-                                        (
-                                          currentData.factCheck as unknown as FactCheckResult
-                                        ).confidence
-                                      }
-                                      %
-                                    </span>
-                                    <span>
-                                      Verified:{" "}
-                                      {(
-                                        currentData.factCheck as unknown as FactCheckResult
-                                      ).isVerified
-                                        ? "Yes"
-                                        : "No"}
-                                    </span>
-                                  </div>
                                 </div>
-                              </CardContent>
-                            </Card>
+                              )}
+                            </div>
                           </div>
                         )}
 
