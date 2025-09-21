@@ -17,14 +17,14 @@ export async function POST(req: Request) {
   const ip = (req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "")
     .split(",")[0]
     .trim();
-  await createSession({
+  const created = await createSession({
     id: sessionId,
     userId: email,
     userAgent: ua,
     ipAddress: ip || null,
     expiresAt,
   });
-  const jwt = await createSessionJWT({ sub: email, email, sessionId });
+  const jwt = await createSessionJWT({ sub: email, email, sessionId: created ? sessionId : undefined });
   const res = new NextResponse(null, { status: 204 });
   res.headers.append(
     "Set-Cookie",

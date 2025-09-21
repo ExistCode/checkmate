@@ -36,6 +36,11 @@ export async function createSessionJWT(payload: {
     .sign(getSecretKey());
 }
 
+/**
+ * Get the auth context from the cookies
+ * @returns The auth context
+ */
+
 export async function getAuthContext(): Promise<AuthContext | null> {
   const c = await cookies();
   const token = c.get(COOKIE_NAME)?.value;

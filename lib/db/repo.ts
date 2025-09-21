@@ -39,26 +39,51 @@ export async function createSession(input: {
   userAgent?: string | null;
   ipAddress?: string | null;
   expiresAt?: Date | null;
-}) {
-  await db.insert(sessions).values({
-    id: input.id,
-    userId: input.userId,
-    userAgent: input.userAgent ?? null,
-    ipAddress: input.ipAddress ?? null,
-    expiresAt: input.expiresAt ?? null,
-  });
+}): Promise<boolean> {
+  try {
+    await db.insert(sessions).values({
+      id: input.id,
+      userId: input.userId,
+      userAgent: input.userAgent ?? null,
+      ipAddress: input.ipAddress ?? null,
+      expiresAt: input.expiresAt ?? null,
+    });
+    return true;
+  } catch (err: any) {
+    // Graceful fallback if sessions table hasn't been migrated yet
+    if (err?.code === "42P01" || /relation \"sessions\" does not exist/i.test(String(err?.message || ""))) {
+      // eslint-disable-next-line no-console
+      console.warn("[auth] sessions table missing; continuing without DB session");
+      return false;
+    }
+    throw err;
+  }
 }
 
 export async function getSessionById(id: string) {
-  const rows = await db.select().from(sessions).where(eq(sessions.id, id)).limit(1);
-  return rows[0] ?? null;
+  try {
+    const rows = await db
+      .select()
+      .from(sessions)
+      .where(eq(sessions.id, id))
+      .limit(1);
+    return rows[0] ?? null;
+  } catch (err: any) {
+    if (err?.code === "42P01") return null;
+    return null;
+  }
 }
 
 export async function revokeSession(id: string) {
-  await db
-    .update(sessions)
-    .set({ revokedAt: new Date() })
-    .where(eq(sessions.id, id));
+  try {
+    await db
+      .update(sessions)
+      .set({ revokedAt: new Date() })
+      .where(eq(sessions.id, id));
+  } catch (err: any) {
+    if (err?.code === "42P01") return; // ignore if table missing
+    throw err;
+  }
 }
 
 export async function createAnalysis(input: {

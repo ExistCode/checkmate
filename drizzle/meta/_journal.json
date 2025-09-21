@@ -15,6 +15,13 @@
       "when": 1758437833066,
       "tag": "0001_fast_valeria_richards",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1758443905629,
+      "tag": "0002_tiresome_morgan_stark",
+      "breakpoints": true
     }
   ]
 }
