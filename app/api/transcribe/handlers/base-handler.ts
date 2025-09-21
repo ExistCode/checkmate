@@ -55,6 +55,15 @@ export interface FactCheckResult {
     description: string; // brief, user-friendly explanation
     references?: Array<{ title: string; url: string }>; // practical articles explaining similar cases
   }>;
+  // NEW: Political bias analysis
+  politicalBias?: {
+    biasDirection: "left" | "right" | "center" | "none";
+    biasIntensity: number; // 0-1 scale
+    confidence: number; // 0-1 scale
+    explanation: string;
+    biasIndicators: string[];
+    politicalTopics: string[];
+  };
 }
 
 /**

@@ -9,6 +9,7 @@ import {
 import { ApiError } from "../../../../lib/api-error";
 import { transcribeVideoDirectly } from "../../../../tools/index";
 import { researchAndFactCheck } from "../../../../tools/fact-checking";
+import { analyzePoliticalBias } from "../../../../tools/fact-checking/political-bias-analysis";
 import { calculateCreatorCredibilityRating } from "../../../../tools/content-analysis";
 import { extractTweetId } from "../../../../lib/validation";
 import { logger } from "../../../../lib/logger";
@@ -288,6 +289,12 @@ Please fact-check the claims from this Twitter/X post content, paying special at
 
         const resultData = factCheck.data as FactCheckData;
 
+        // Perform political bias analysis
+        const politicalBiasAnalysis = await analyzePoliticalBias(
+          textToFactCheck,
+          `Twitter/X content analysis from user: ${twitterData?.username || 'unknown'}`
+        );
+
         const factCheckResult: FactCheckResult = {
           verdict:
             (resultData.overallStatus as FactCheckResult["verdict"]) ||
@@ -299,6 +306,7 @@ Please fact-check the claims from this Twitter/X post content, paying special at
             (textToFactCheck.length > 500 ? "..." : ""),
           sources: resultData.sources || [],
           flags: [],
+          politicalBias: politicalBiasAnalysis,
         };
 
         logger.info("Fact-check completed", {
