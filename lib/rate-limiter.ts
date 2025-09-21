@@ -161,13 +161,15 @@ export function createRateLimitMiddleware(
 
     // Prepare headers
     const headers: Record<string, string> = {
-      "X-RateLimit-Limit": options.maxRequests.toString(),
-      "X-RateLimit-Remaining": result.remaining.toString(),
+      "X-RateLimit-Limit": String(options.maxRequests),
+      "X-RateLimit-Remaining": String(result.remaining ?? 0),
       "X-RateLimit-Reset": new Date(result.resetTime).toISOString(),
     };
 
     if (!result.allowed) {
-      headers["Retry-After"] = result.retryAfter!.toString();
+      headers["Retry-After"] = String(
+        result.retryAfter ?? Math.ceil(options.windowMs / 1000)
+      );
       return {
         allowed: false,
         headers,
@@ -186,11 +188,11 @@ export function createRateLimitMiddleware(
 export const OPERATION_LIMITS = {
   transcribe: {
     windowMs: 60 * 1000, // 1 minute
-    maxRequests: 10, // Max 10 transcriptions per minute
+    maxRequests: 120, // Very generous: 120/min
   },
   factCheck: {
     windowMs: 60 * 1000, // 1 minute
-    maxRequests: 5, // Max 5 fact-checks per minute (more expensive)
+    maxRequests: 60, // Generous: 60/min
   },
 } as const;
 

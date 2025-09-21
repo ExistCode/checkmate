@@ -104,7 +104,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     });
 
     // Step 3: Check rate limits for this operation
-    const rateLimitResult = checkOperationRateLimit(request, "transcribe");
+    const rateLimitResult = await checkOperationRateLimit(
+      request,
+      "transcribe"
+    );
     if (!rateLimitResult.allowed) {
       logger.warn("Rate limit exceeded", {
         requestId,
@@ -121,11 +124,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         {
           status: 429,
           headers: {
-            "X-RateLimit-Remaining": rateLimitResult.remaining.toString(),
+            "X-RateLimit-Remaining": String(rateLimitResult.remaining ?? 0),
             "X-RateLimit-Reset": new Date(
               rateLimitResult.resetTime
             ).toISOString(),
-            "Retry-After": rateLimitResult.retryAfter?.toString() || "60",
+            "Retry-After": String(rateLimitResult.retryAfter ?? 60),
           },
         }
       );
