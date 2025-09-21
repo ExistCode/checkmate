@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState, useRef } from 'react';
 import {
   ReactFlow,
   Node,
@@ -15,8 +15,9 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { Card } from '../ui/card';
+import { Button } from '../ui/button';
 
-// Add mobile-specific styles for ReactFlow
+// Add mobile-specific and fullscreen styles for ReactFlow
 const mobileStyles = `
   .react-flow-mobile-container {
     position: relative;
@@ -27,10 +28,72 @@ const mobileStyles = `
     width: 100% !important;
     height: 100% !important;
   }
+  
+  /* Fullscreen styles */
+  .react-flow-fullscreen-container {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    z-index: 9999 !important;
+    background: white !important;
+    width: 100vw !important;
+    height: 100vh !important;
+  }
+  
+  .react-flow-fullscreen-container .react-flow__viewport {
+    width: 100% !important;
+    height: 100% !important;
+  }
+  
+  /* Controls positioning and sizing */
+  .react-flow__controls {
+    position: absolute !important;
+    top: 10px !important;
+    right: 10px !important;
+    height: auto !important;
+    width: auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+  }
+  
+  .react-flow__controls button,
+  .react-flow__controls .react-flow__controls-button {
+    width: 32px !important;
+    height: 32px !important;
+    min-height: 32px !important;
+    border-radius: 4px !important;
+    border: 1px solid #ddd !important;
+    background: white !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    color: #374151 !important;
+    transition: all 0.2s ease !important;
+  }
+  
+  .react-flow__controls button:hover,
+  .react-flow__controls .react-flow__controls-button:hover {
+    background: #f9fafb !important;
+    border-color: #9ca3af !important;
+  }
+  
   @media (max-width: 640px) {
-    .react-flow-mobile-container .react-flow__controls {
+    .react-flow__controls {
       bottom: 10px !important;
+      top: auto !important;
       right: 10px !important;
+    }
+    
+    .react-flow__controls button,
+    .react-flow__controls .react-flow__controls-button {
+      width: 36px !important;
+      height: 36px !important;
+      min-height: 36px !important;
     }
   }
 `;
@@ -51,7 +114,9 @@ import {
   Brain,
   Clock,
   TrendingUp,
-  Share2
+  Share2,
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 
 // Helper function to parse simple markdown to text for plain text contexts
@@ -824,6 +889,62 @@ export function OriginTracingDiagram({
   content = '',
   allLinks = [],
 }: OriginTracingDiagramProps) {
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  // Fullscreen toggle handler
+  const toggleFullscreen = useCallback(async () => {
+    if (!containerRef.current) return;
+    
+    try {
+      if (!isFullscreen) {
+        // Enter fullscreen
+        if (containerRef.current.requestFullscreen) {
+          await containerRef.current.requestFullscreen();
+        } else if ((containerRef.current as any).webkitRequestFullscreen) {
+          await (containerRef.current as any).webkitRequestFullscreen();
+        } else if ((containerRef.current as any).mozRequestFullScreen) {
+          await (containerRef.current as any).mozRequestFullScreen();
+        }
+        setIsFullscreen(true);
+      } else {
+        // Exit fullscreen
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } else if ((document as any).webkitExitFullscreen) {
+          await (document as any).webkitExitFullscreen();
+        } else if ((document as any).mozCancelFullScreen) {
+          await (document as any).mozCancelFullScreen();
+        }
+        setIsFullscreen(false);
+      }
+    } catch (error) {
+      console.warn('Fullscreen operation failed:', error);
+      // Fallback to CSS-only fullscreen
+      setIsFullscreen(!isFullscreen);
+    }
+  }, [isFullscreen]);
+
+  // Handle fullscreen change events
+  React.useEffect(() => {
+    const handleFullscreenChange = () => {
+      const fullscreenElement = document.fullscreenElement || 
+        (document as any).webkitFullscreenElement || 
+        (document as any).mozFullScreenElement;
+      setIsFullscreen(!!fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
   const { nodes: initialNodes, edges: initialEdges } = useMemo(() => {
     const nodes: Node[] = [];
     const edges: Edge[] = [];
@@ -1187,20 +1308,33 @@ export function OriginTracingDiagram({
   return (
     <>
       <style dangerouslySetInnerHTML={{ __html: mobileStyles }} />
-      <Card className="w-full h-[600px] sm:h-[500px] md:h-[600px] p-3 shadow-lg mb-6">
-      <div className="h-full">
-        <div className="mb-3">
-          <h3 className="text-lg font-bold mb-1 flex items-center gap-2">
-            <TrendingUp className="h-4 w-4 text-blue-600" />
-            Belief Evolution Network
-          </h3>
-          <p className="text-xs text-muted-foreground">
-            Step-by-step evolution from origin through platforms to current state
-            <span className="hidden sm:inline ml-2 text-gray-400">• Scroll wheel to zoom, controls to reset view</span>
-            <span className="sm:hidden ml-2 text-gray-400">• Pinch to zoom, tap controls to reset</span>
-          </p>
-        </div>
-        <div className="h-[calc(100%-3.5rem)] w-full border rounded-lg overflow-hidden bg-gradient-to-br from-gray-50 to-white relative">
+      <div
+        ref={containerRef}
+        className={
+          isFullscreen 
+            ? "react-flow-fullscreen-container"
+            : "w-full h-[600px] sm:h-[500px] md:h-[600px] p-3 md:pb-0 shadow-lg mb-6 bg-white border rounded-lg"
+        }
+      >
+        <div className="h-full">
+          {!isFullscreen && (
+            <div className="mb-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground">
+                    Step-by-step evolution from origin through platforms to current state
+                    <span className="hidden sm:inline ml-2 text-gray-400">• Scroll wheel to zoom, controls to reset view</span>
+                    <span className="sm:hidden ml-2 text-gray-400">• Pinch to zoom, tap controls to reset</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          <div className={
+            isFullscreen 
+              ? "h-full w-full bg-gradient-to-br from-gray-50 to-white relative"
+              : "h-[calc(100%-3.5rem)] w-full border rounded-lg overflow-hidden bg-gradient-to-br from-gray-50 to-white relative"
+          }>
           <ReactFlow
             nodes={nodes}
             edges={edges}
@@ -1227,7 +1361,7 @@ export function OriginTracingDiagram({
             nodesDraggable={false}
             nodesConnectable={false}
             elementsSelectable={true}  // Enable to allow link clicks
-            panOnDrag={false}
+            panOnDrag={true}
             // Keep zoom functionality for better UX
             zoomOnScroll={true}
             zoomOnPinch={true}
@@ -1244,12 +1378,25 @@ export function OriginTracingDiagram({
               showZoom={true}  // Keep zoom controls visible
               showFitView={true}  // Allow users to reset view
               position="top-right"
-            />
+            >
+              {/* Custom fullscreen control */}
+              <div 
+                className="react-flow__controls-button" 
+                onClick={toggleFullscreen}
+                title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+              >
+                {isFullscreen ? (
+                  <Minimize2 className="h-4 w-4" />
+                ) : (
+                  <Maximize2 className="h-4 w-4" />
+                )}
+              </div>
+            </Controls>
             <Background gap={15} size={1} color="#f1f5f9" />
           </ReactFlow>
+          </div>
         </div>
       </div>
-    </Card>
     </>
   );
 }
