@@ -91,6 +91,63 @@ export class TikTokHandler extends BaseHandler {
   }
 
   /**
+   * Small delay helper for retry backoff
+   */
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Try downloading TikTok metadata with version fallback and limited retries
+   * Attempts downloader versions in order: v3 -> v2 -> v1
+   */
+  private async downloadWithFallback(
+    url: string,
+    context: ProcessingContext
+  ): Promise<{ result: any; usedVersion: string }> {
+    const versions = ["v3", "v2", "v1"] as const;
+    const maxRetriesPerVersion = 2;
+
+    for (const version of versions) {
+      for (let attempt = 1; attempt <= maxRetriesPerVersion; attempt++) {
+        try {
+          logger.debug("Trying TikTok downloader", {
+            requestId: context.requestId,
+            platform: this.platform,
+            operation: "extract-content",
+            metadata: { url, version, attempt },
+          });
+
+          const result = await Downloader(url, { version });
+
+          if (result?.status === "success" && result?.result) {
+            return { result, usedVersion: version };
+          }
+
+          logger.warn("Downloader returned unsuccessful status", {
+            requestId: context.requestId,
+            platform: this.platform,
+            operation: "extract-content",
+            metadata: { url, version, attempt, status: result?.status },
+          });
+        } catch (err) {
+          logger.warn("Downloader attempt failed", {
+            requestId: context.requestId,
+            platform: this.platform,
+            operation: "extract-content",
+            metadata: { url, version, attempt, error: (err as Error)?.message },
+          });
+        }
+
+        // Exponential-ish backoff
+        await this.sleep(300 * attempt);
+      }
+    }
+
+    throw new Error("All TikTok downloader versions failed after retries");
+  }
+
+  /**
    * Extracts TikTok video metadata and download URLs
    *
    * Uses the TikTok API downloader to fetch comprehensive video metadata including
@@ -145,14 +202,17 @@ export class TikTokHandler extends BaseHandler {
     });
 
     try {
-      const result = await Downloader(url, { version: "v3" });
+      const { result, usedVersion } = await this.downloadWithFallback(
+        url,
+        context
+      );
 
-      if (result.status !== "success" || !result.result) {
-        throw ApiError.tiktokFetchFailed(
-          url,
-          new Error("TikTok downloader returned unsuccessful status")
-        );
-      }
+      logger.debug("TikTok content extracted", {
+        requestId: context.requestId,
+        platform: this.platform,
+        operation: "extract-content",
+        metadata: { url, usedVersion },
+      });
 
       const data = result.result;
 
