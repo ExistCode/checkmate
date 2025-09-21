@@ -166,15 +166,17 @@ export abstract class BaseHandler {
           const prompt = `You are an origin-tracing and misinformation analysis assistant.
 
 Task: Read the following analysis text and produce a compact JSON with:
-- originTracing: { hypothesizedOrigin: string | null, firstSeenDates: Array<{source: string, date?: string, url?: string}> | null, propagationPaths: string[] | null }
+- originTracing: { hypothesizedOrigin: string | null, firstSeenDates: Array<{source: string, date?: string, url?: string}> | null, evolutionSteps: Array<{platform: string, transformation: string, impact?: string, date?: string}> | null }
 - beliefDrivers: Array<{ name: string, description: string, references?: Array<{ title: string, url: string }> }>
-- sources: Array<{ title: string, url: string }>
+- sources: Array<{ title: string, url: string, source?: string }>
 - verdict: one of [verified, misleading, false, unverified, satire]
 - claim: the current claim summarized as one sentence
 
 Guidelines (optimize for rich, comprehensive node coverage without fabrication):
 - Extract AS MANY distinct items as present in the text; do not invent facts.
-- Targets: firstSeenDates up to 15, propagationPaths up to 15, beliefDrivers up to 10, sources up to 15.
+- Targets: firstSeenDates up to 15, evolutionSteps up to 10, beliefDrivers up to 10, sources up to 15.
+- For evolutionSteps: Show HOW the belief/claim transformed on each platform, not just platform names. Include the specific adaptation, amplification, or mutation that occurred.
+- For sources: Include both 'title' and 'source' fields where 'source' is the publication/organization name (e.g., "Reuters", "Snopes") and 'title' is the article title.
 - Include dates and URLs whenever available. Prefer diverse platforms (forums, social, influencers, blogs, news, messaging).
 - If the text mentions studies or articles that support belief drivers, include up to 2 references per driver.
 - Deduplicate obvious duplicates while preserving distinct sources.
@@ -218,6 +220,11 @@ Return ONLY valid JSON.`;
             (d) => `${(d.source || '').toLowerCase()}|${d.date || ''}|${d.url || ''}`
           ).slice(0, 15);
 
+          const evolutionStepsMerged = [
+            ...((aiOT.originTracing?.evolutionSteps || []) as Array<{platform: string, transformation: string, impact?: string, date?: string}>),
+            ...((parsed.originTracing.propagationPaths || []).map((path: string) => ({ platform: path, transformation: `Content spread through ${path}` })) as Array<{platform: string, transformation: string}>),
+          ].slice(0, 10);
+          
           const propagationPathsMerged = Array.from(
             new Set<string>([
               ...((aiOT.originTracing?.propagationPaths || []) as string[]),
@@ -252,6 +259,7 @@ Return ONLY valid JSON.`;
             originTracing: {
               hypothesizedOrigin: aiOT.originTracing?.hypothesizedOrigin ?? parsed.originTracing.hypothesizedOrigin ?? undefined,
               firstSeenDates: firstSeenDatesMerged.length ? firstSeenDatesMerged : undefined,
+              evolutionSteps: evolutionStepsMerged.length ? evolutionStepsMerged : undefined,
               propagationPaths: propagationPathsMerged.length ? propagationPathsMerged : undefined,
             },
             beliefDrivers: Array.isArray(aiOT.beliefDrivers) && aiOT.beliefDrivers.length
@@ -261,6 +269,7 @@ Return ONLY valid JSON.`;
               ? aiOT.sources.map((s: any) => ({
                   url: String(s.url || ''),
                   title: String(s.title || s.url || 'Source'),
+                  source: String(s.source || ''),
                   credibility: s.url ? computeCredibilityFromUrl(String(s.url)) : 60,
                 })).slice(0, 15)
               : parsed.sources.slice(0, 15),
@@ -286,7 +295,9 @@ Return ONLY valid JSON.`;
             requestId: context.requestId,
             platform: this.platform,
             operation: "origin-tracing",
-            error: error instanceof Error ? error.message : 'Unknown error',
+            metadata: {
+              error: error instanceof Error ? error.message : 'Unknown error',
+            },
           });
         }
       }

@@ -1,6 +1,5 @@
-import React, { useCallback, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { OriginTracingDiagram } from "./analysis";
-import { Button } from "./ui/button";
 import { type OriginTracingResult } from "@/lib/analysis/parseOriginTracing";
 
 // parsing moved to lib/analysis/parseOriginTracing
@@ -28,38 +27,41 @@ import { type OriginTracingResult } from "@/lib/analysis/parseOriginTracing";
 type DiagramData = OriginTracingResult & { claim?: string; allLinks?: Array<{ url: string; title?: string }> };
 
 export function AnalysisRenderer({ content }: { content: string }) {
-  // Conditional diagram generation state (diagram generated on demand)
+  // Auto-generate diagram data on mount
   const [diagramData, setDiagramData] = useState<DiagramData | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const handleGenerateDiagram = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const res = await fetch("/api/analyses/origin-tracing", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content }),
-      });
-      if (!res.ok) {
-        throw new Error("Failed to generate diagram");
+  useEffect(() => {
+    const generateDiagram = async () => {
+      if (!content || content.trim() === '') return;
+      
+      try {
+        setLoading(true);
+        const res = await fetch("/api/analyses/origin-tracing", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ content }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setDiagramData({
+            originTracing: data.originTracing,
+            beliefDrivers: data.beliefDrivers,
+            sources: data.sources,
+            verdict: data.verdict,
+            claim: data.claim,
+            allLinks: data.allLinks,
+          } as DiagramData);
+        }
+      } catch (e) {
+        // Silently fail - diagram is optional
+        console.warn('Failed to generate origin tracing diagram:', e);
+      } finally {
+        setLoading(false);
       }
-      const data = await res.json();
-      setDiagramData({
-        originTracing: data.originTracing,
-        beliefDrivers: data.beliefDrivers,
-        sources: data.sources,
-        verdict: data.verdict,
-        claim: data.claim,
-        allLinks: data.allLinks,
-      } as DiagramData);
-    } catch (e) {
-      const message = e instanceof Error ? e.message : "Something went wrong";
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
+    };
+
+    generateDiagram();
   }, [content]);
 
   // Guard against null/empty content after hooks are declared
@@ -320,16 +322,8 @@ export function AnalysisRenderer({ content }: { content: string }) {
 
   return (
     <div className="space-y-4">
-      {/* Step 1: Show button, no diagram yet */}
-      <div className="flex items-center gap-3">
-        <Button onClick={handleGenerateDiagram} disabled={loading}>
-          {loading ? "Generating..." : "Generate Origin Diagram"}
-        </Button>
-        {error && <span className="text-sm text-red-600">{error}</span>}
-      </div>
-
-      {/* Step 2: Render diagram only after generation */}
-      {diagramData && (
+      {/* Auto-render diagram when available */}
+      {diagramData && !loading && (
         <OriginTracingDiagram
           originTracing={diagramData.originTracing}
           beliefDrivers={diagramData.beliefDrivers}
@@ -339,6 +333,15 @@ export function AnalysisRenderer({ content }: { content: string }) {
           allLinks={diagramData.allLinks}
         />
       )}
+      
+      {/* Show loading state for diagram */}
+      {loading && (
+        <div className="flex items-center justify-center p-8 bg-muted rounded-lg">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mr-3"></div>
+          <span className="text-sm text-muted-foreground">Generating belief evolution diagram...</span>
+        </div>
+      )}
+      
       {renderContent(content)}
     </div>
   );

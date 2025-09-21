@@ -4,6 +4,7 @@ export interface OriginTracingData {
   hypothesizedOrigin?: string;
   firstSeenDates?: Array<{ source: string; date?: string; url?: string }>;
   propagationPaths?: string[];
+  evolutionSteps?: Array<{ platform: string; transformation: string; impact?: string; date?: string }>;
 }
 
 export interface BeliefDriver {
@@ -15,6 +16,7 @@ export interface BeliefDriver {
 export interface FactCheckSource {
   url: string;
   title: string;
+  source?: string;
   credibility: number;
 }
 

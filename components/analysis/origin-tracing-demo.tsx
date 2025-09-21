@@ -21,6 +21,32 @@ export function OriginTracingDemo() {
         "YouTube influencers", 
         "TikTok creators",
         "Telegram channels"
+      ],
+      evolutionSteps: [
+        {
+          platform: "Facebook groups",
+          transformation: "Claim evolved to include specific vaccine manufacturers and added false claims about DNA alteration",
+          impact: "Reached 50,000+ members across anti-vaccine groups",
+          date: "2021-03-17"
+        },
+        {
+          platform: "YouTube influencers",
+          transformation: "Video content added visual 'evidence' with misleading microscopy images",
+          impact: "Videos gained 2M+ views before removal",
+          date: "2021-03-20"
+        },
+        {
+          platform: "TikTok creators",
+          transformation: "Shortened to catchy phrases like '#ChipFree' and '#VaccineChoice' with emotional personal stories",
+          impact: "Hashtag used in 100,000+ posts",
+          date: "2021-03-25"
+        },
+        {
+          platform: "Telegram channels",
+          transformation: "Combined with other conspiracy theories about 5G networks and government surveillance",
+          impact: "Shared across 200+ channels with 500K+ subscribers",
+          date: "2021-04-01"
+        }
       ]
     },
     beliefDrivers: [
@@ -45,22 +71,26 @@ export function OriginTracingDemo() {
     sources: [
       {
         url: "https://snopes.com/example",
-        title: "Snopes: COVID-19 Vaccines Do Not Contain Microchips",
+        title: "COVID-19 Vaccines Do Not Contain Microchips",
+        source: "Snopes",
         credibility: 95
       },
       {
         url: "https://factcheck.org/example", 
-        title: "FactCheck.org: No Evidence of Microchips in Vaccines",
+        title: "No Evidence of Microchips in Vaccines",
+        source: "FactCheck.org",
         credibility: 93
       },
       {
         url: "https://reuters.com/example",
-        title: "Reuters Fact Check: Microchip Claims Debunked",
+        title: "Fact Check: Microchip Claims Debunked",
+        source: "Reuters",
         credibility: 91
       },
       {
         url: "https://apnews.com/example",
-        title: "AP News: Health Officials Reject Microchip Claims",
+        title: "Health Officials Reject Microchip Claims",
+        source: "AP News",
         credibility: 94
       }
     ],
