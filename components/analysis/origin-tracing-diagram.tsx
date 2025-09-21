@@ -434,8 +434,8 @@ const extractClaimContent = (
 // Helper function to detect and resolve node overlaps
 const resolveOverlaps = (nodes: Node[]): Node[] => {
   const resolvedNodes = [...nodes];
-  const nodeSpacing = 400; // Much larger minimum spacing between nodes
-  const verticalSpacing = 250; // Much larger minimum vertical spacing
+  const nodeSpacing = 280; // Reduced minimum spacing between nodes
+  const verticalSpacing = 180; // Reduced minimum vertical spacing
   const gridSize = 40; // Snap to grid for cleaner layout
   
   // Multiple passes to resolve all overlaps
@@ -450,7 +450,7 @@ const resolveOverlaps = (nodes: Node[]): Node[] => {
         
         // Check if nodes are too close horizontally (same row-ish)
         if (verticalDistance < 120 && horizontalDistance < nodeSpacing) {
-          const adjustment = nodeSpacing - horizontalDistance + 80; // Larger buffer
+          const adjustment = nodeSpacing - horizontalDistance + 40; // Reduced buffer
           
           // Move the rightmost node further right
           if (nodeA.position.x < nodeB.position.x) {
@@ -462,7 +462,7 @@ const resolveOverlaps = (nodes: Node[]): Node[] => {
         
         // Check if nodes are too close vertically (same column-ish)
         if (horizontalDistance < 120 && verticalDistance < verticalSpacing) {
-          const adjustment = verticalSpacing - verticalDistance + 80; // Larger buffer
+          const adjustment = verticalSpacing - verticalDistance + 40; // Reduced buffer
           
           // Move the lower node further down
           if (nodeA.position.y < nodeB.position.y) {
@@ -502,40 +502,40 @@ const createLogicalFlow = (
     // Origin on far left
     origin: { x: centerX - 800, y: centerY },
     
-    // Evolution chain flowing left to right toward center - much larger spacing
+    // Evolution chain flowing left to right toward center - reduced spacing
     evolution: {
-      startX: centerX - 1000,
-      endX: centerX - 350,
+      startX: centerX - 700,
+      endX: centerX - 250,
       y: centerY,
-      spacing: Math.max(350, 750 / Math.max(evolutionNodes.length, 1))
+      spacing: Math.max(250, 500 / Math.max(evolutionNodes.length, 1))
     },
     
     // Claim at center-right (destination of flow)
     claim: { x: centerX, y: centerY },
     
-    // Belief drivers above in arc formation - much larger spacing
+    // Belief drivers above in arc formation - reduced spacing
     beliefs: {
-      centerX: centerX - 500,
-      y: centerY - 400,
-      radius: 600,
+      centerX: centerX - 350,
+      y: centerY - 300,
+      radius: 450,
       startAngle: -Math.PI / 2.5,
       endAngle: Math.PI / 2.5
     },
     
-    // Sources below in arc formation - much larger spacing
+    // Sources below in arc formation - reduced spacing
     sources: {
       centerX: centerX,
-      y: centerY + 400,
-      radius: 600,
+      y: centerY + 300,
+      radius: 450,
       startAngle: Math.PI / 4,
       endAngle: Math.PI - Math.PI / 4
     },
     
-    // Links on the right side in column - much larger spacing
+    // Links on the right side in column - reduced spacing
     links: {
-      x: centerX + 700,
-      startY: centerY - 300,
-      spacing: 200
+      x: centerX + 500,
+      startY: centerY - 250,
+      spacing: 150
     }
   };
   
@@ -550,7 +550,7 @@ const createLogicalFlow = (
     if (evolutionIndex !== -1) {
       const progress = evolutionNodes.length > 1 ? evolutionIndex / (evolutionNodes.length - 1) : 0;
       const x = flowLayout.evolution.startX + (flowLayout.evolution.endX - flowLayout.evolution.startX) * progress;
-      const yOffset = (evolutionIndex % 3 - 1) * 150; // Much larger vertical stagger
+      const yOffset = (evolutionIndex % 3 - 1) * 100; // Reduced vertical stagger
       return { ...node, position: { x, y: flowLayout.evolution.y + yOffset } };
     }
     
@@ -643,31 +643,31 @@ export function OriginTracingDiagram({
         startX: centerX - evolutionWidth - 150,
         endX: centerX - 150,
         y: 320,
-        stepSpacing: Math.max(200, evolutionWidth / Math.max(totalEvolutionSteps, 1)),
+        stepSpacing: Math.max(150, evolutionWidth / Math.max(totalEvolutionSteps, 1)),
         verticalSpread: 100,
       },
       
-      // Belief drivers above center - significantly increased spacing for no overlaps
+      // Belief drivers above center - reduced spacing
       beliefs: { 
-        startX: centerX - (Math.min(beliefDrivers.length, 3) * 450) / 2,
-        y: 60, 
-        spacing: 450,
+        startX: centerX - (Math.min(beliefDrivers.length, 3) * 320) / 2,
+        y: 80, 
+        spacing: 320,
         maxPerRow: 3
       },
       
-      // Sources below center - significantly increased spacing  
+      // Sources below center - reduced spacing  
       sources: { 
-        startX: centerX - (Math.min(sources.length, 3) * 420) / 2, 
-        y: 520, 
-        spacing: 420,
+        startX: centerX - (Math.min(sources.length, 3) * 300) / 2, 
+        y: 480, 
+        spacing: 300,
         maxPerRow: 3 // Reduce per row to ensure better spacing
       },
       
-      // All links at bottom - significantly increased spacing
+      // All links at bottom - reduced spacing
       allLinks: {
-        startX: centerX - (Math.min(allLinks.length, 4) * 350) / 2,
-        y: 720,
-        spacing: 350,
+        startX: centerX - (Math.min(allLinks.length, 4) * 280) / 2,
+        y: 650,
+        spacing: 280,
         maxPerRow: 4, // Reduce per row to ensure better spacing
       },
       
@@ -678,7 +678,7 @@ export function OriginTracingDiagram({
       
       // Layout bounds
       centerX,
-      totalHeight: 850
+      totalHeight: 750
     };
 
     // Build chronological evolution chain
@@ -754,7 +754,7 @@ export function OriginTracingDiagram({
       const stepNumber = previousNodeId ? localEvolutionNodes.length : 0;
       
       // Alternate positions to prevent overlaps - use staggered pattern with much more spacing
-      const yOffset = (index % 3 === 0) ? 0 : (index % 3 === 1 ? -120 : 120);
+      const yOffset = (index % 3 === 0) ? 0 : (index % 3 === 1 ? -80 : 80);
       
       nodes.push({
         id: stepNodeId,
@@ -834,7 +834,7 @@ export function OriginTracingDiagram({
       
       // Ensure adequate spacing to prevent overlaps
       const x = LAYOUT.beliefs.startX + col * LAYOUT.beliefs.spacing;
-      const y = LAYOUT.beliefs.y - row * 160; // Further increased row spacing
+      const y = LAYOUT.beliefs.y - row * 120; // Reduced row spacing
       
       nodes.push({
         id: driverNodeId,
@@ -874,7 +874,7 @@ export function OriginTracingDiagram({
         type: 'source',
         position: { 
           x: LAYOUT.sources.startX + col * LAYOUT.sources.spacing,
-          y: LAYOUT.sources.y + row * 180 // Increased row spacing for multiple rows
+          y: LAYOUT.sources.y + row * 130 // Reduced row spacing for multiple rows
         },
         data: { 
           label: source.source || (source.url ? new URL(source.url).hostname.replace(/^www\./, '') : source.title), 
@@ -914,7 +914,7 @@ export function OriginTracingDiagram({
         type: 'source',
         position: { 
           x,
-          y: LAYOUT.allLinks.y + row * 130 // Adequate row spacing
+          y: LAYOUT.allLinks.y + row * 100 // Reduced row spacing
         },
         data: {
           label: link.title || link.url,
@@ -952,7 +952,7 @@ export function OriginTracingDiagram({
   }
 
   return (
-    <Card className="w-full h-[1300px] p-3 shadow-lg mb-6">
+    <Card className="w-full h-[1000px] p-3 shadow-lg mb-6">
       <div className="h-full">
         <div className="mb-3">
           <h3 className="text-lg font-bold mb-1 flex items-center gap-2">
