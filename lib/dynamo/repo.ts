@@ -274,11 +274,7 @@ export const getAnalysisById = async (id: string) => {
   );
   const pointer = res.Items?.[0];
   if (!pointer) return null;
-  const [_, userKey, iso] = (pointer.GSI9SK as string).split("#");
-  const userId = userKey
-    ?.replace("USER", "")
-    .replace(":", "")
-    .replace("USER", "");
+  const [, /*_*/ userKey] = (pointer.GSI9SK as string).split("#");
   const full = await ddbDoc.send(
     new GetCommand({
       TableName: TABLE,

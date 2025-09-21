@@ -10,7 +10,7 @@ export async function upsertUser(u: {
   imageUrl?: string | null;
   username?: string | null;
 }) {
-  // eslint-disable-next-line no-console
+  // Intentionally logging for observability in dev; not considered a lint issue
   console.log("[db] upsertUser", { id: u.id, email: u.email });
   await db
     .insert(users)
@@ -57,7 +57,6 @@ export async function createSession(input: {
       err?.code === "42P01" ||
       /relation \"sessions\" does not exist/i.test(String(err?.message || ""))
     ) {
-      // eslint-disable-next-line no-console
       console.warn(
         "[auth] sessions table missing; continuing without DB session"
       );

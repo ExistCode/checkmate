@@ -44,7 +44,7 @@ export interface FactCheckResult {
     credibility: number;
   }>;
   flags: string[];
-  // NEW: provenance and psychology context for transparency
+
   originTracing?: {
     hypothesizedOrigin?: string; // Where the claim likely originated (with citations if possible)
     firstSeenDates?: Array<{ source: string; date?: string; url?: string }>; // timeline hints

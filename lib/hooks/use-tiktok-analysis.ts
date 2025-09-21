@@ -75,7 +75,7 @@ interface TikTokAnalysisResult {
 export function useTikTokAnalysis() {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<TikTokAnalysisResult | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSaving, _setIsSaving] = useState(false);
 
   const analyzeTikTok = async (
     url: string,
@@ -128,7 +128,9 @@ export function useTikTokAnalysis() {
         const errorData = await response.json();
         throw new Error(
           errorData.error ||
-            `Failed to analyze ${isTikTok ? "TikTok" : isTwitter ? "Twitter" : "web"} content`
+            `Failed to analyze ${
+              isTikTok ? "TikTok" : isTwitter ? "Twitter" : "web"
+            } content`
         );
       }
 

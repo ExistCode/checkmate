@@ -25,8 +25,8 @@ export async function GET(
       typeof (item as any).lastAnalyzedAt === "number"
         ? (item as any).lastAnalyzedAt
         : (item as any).lastAnalyzedAt
-        ? new Date((item as any).lastAnalyzedAt).getTime()
-        : 0,
+          ? new Date((item as any).lastAnalyzedAt).getTime()
+          : 0,
   };
   return NextResponse.json(normalized);
 }
@@ -63,7 +63,6 @@ export async function PUT(
   const content = (body?.comment || body?.content || "").toString();
   if (!content.trim())
     return NextResponse.json({ error: "Empty comment" }, { status: 400 });
-  const now = Date.now();
   const id =
     globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2);
   const { creatorId, platform } = await context.params;

@@ -116,18 +116,13 @@ export function Header() {
     <>
       {pathname !== "/news" && (
         <div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              router.push("/news");
-              if (closeMenu) closeMenu();
-            }}
-            className="w-full justify-start"
+          <Link
+            href="/news"
+            className="w-full justify-start hover:text-primary"
           >
             <Newspaper className="h-4 w-4 mr-2" />
             {t.getNews}
-          </Button>
+          </Link>
         </div>
       )}
       {mobile ? (

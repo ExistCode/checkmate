@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { type OriginTracingResult } from "@/lib/analysis/parseOriginTracing";
 
 // parsing moved to lib/analysis/parseOriginTracing
@@ -23,13 +23,14 @@ import { type OriginTracingResult } from "@/lib/analysis/parseOriginTracing";
  * - - Bullet points
  * - - **Sub-headers:** with content
  */
-type DiagramData = OriginTracingResult & { claim?: string; allLinks?: Array<{ url: string; title?: string }> };
+// type DiagramData = OriginTracingResult & { claim?: string; allLinks?: Array<{ url: string; title?: string }> };
 
 export function AnalysisRenderer({ content }: { content: string }) {
   // Diagram rendering moved to hero section. This component now strictly renders analysis text content.
 
   // Guard against null/empty content after hooks are declared
-  const isEmpty = !content || typeof content !== "string" || content.trim() === "";
+  const isEmpty =
+    !content || typeof content !== "string" || content.trim() === "";
   if (isEmpty) {
     return null;
   }
@@ -115,7 +116,9 @@ export function AnalysisRenderer({ content }: { content: string }) {
       6: "text-sm mb-2 mt-2", // h6
     };
 
-    const className = `${baseClasses} ${levelClasses[level] || levelClasses[4]}`;
+    const className = `${baseClasses} ${
+      levelClasses[level] || levelClasses[4]
+    }`;
 
     switch (level) {
       case 1:
@@ -165,28 +168,38 @@ export function AnalysisRenderer({ content }: { content: string }) {
 
   const renderSectionContent = (content: string) => {
     // Split content into paragraphs, preserving empty lines
-    const paragraphs = content.split(/\n\s*\n/).filter(p => p.trim());
+    const paragraphs = content.split(/\n\s*\n/).filter((p) => p.trim());
     const elements = [];
 
     for (let i = 0; i < paragraphs.length; i++) {
       const paragraph = paragraphs[i].trim();
-      const lines = paragraph.split('\n');
-      
+      const lines = paragraph.split("\n");
+
       // Check if this paragraph is a list
-      const isListParagraph = lines.every(line => 
-        !line.trim() || line.trim().startsWith('- ') || line.trim().startsWith('* ')
+      const isListParagraph = lines.every(
+        (line) =>
+          !line.trim() ||
+          line.trim().startsWith("- ") ||
+          line.trim().startsWith("* ")
       );
 
-      if (isListParagraph && lines.some(line => line.trim().startsWith('- ') || line.trim().startsWith('* '))) {
+      if (
+        isListParagraph &&
+        lines.some(
+          (line) => line.trim().startsWith("- ") || line.trim().startsWith("* ")
+        )
+      ) {
         // Render as a list
-        const listItems = lines.filter(line => line.trim().startsWith('- ') || line.trim().startsWith('* '));
+        const listItems = lines.filter(
+          (line) => line.trim().startsWith("- ") || line.trim().startsWith("* ")
+        );
         elements.push(
           <ul key={`list-${i}`} className="space-y-2 mb-4">
             {listItems.map((line, idx) => {
-              const text = line.replace(/^[\s]*[-*]\s*/, '');
-              
+              const text = line.replace(/^[\s]*[-*]\s*/, "");
+
               // Check for sub-header format
-              if (text.includes('**') && text.includes(':**')) {
+              if (text.includes("**") && text.includes(":**")) {
                 const match = text.match(/\*\*([^*]+):\*\*(.*)/);
                 if (match) {
                   return (
@@ -201,10 +214,12 @@ export function AnalysisRenderer({ content }: { content: string }) {
                   );
                 }
               }
-              
+
               return (
                 <li key={idx} className="flex items-start gap-2">
-                  <span className="text-primary mt-1.5 text-xs leading-none">•</span>
+                  <span className="text-primary mt-1.5 text-xs leading-none">
+                    •
+                  </span>
                   <div className="flex-1 text-sm leading-relaxed">
                     {renderText(text)}
                   </div>
@@ -215,10 +230,13 @@ export function AnalysisRenderer({ content }: { content: string }) {
         );
       } else {
         // Render as regular paragraph(s)
-        const cleanParagraph = lines.join(' ').trim();
+        const cleanParagraph = lines.join(" ").trim();
         if (cleanParagraph) {
           elements.push(
-            <p key={`para-${i}`} className="mb-4 text-sm leading-relaxed text-foreground">
+            <p
+              key={`para-${i}`}
+              className="mb-4 text-sm leading-relaxed text-foreground"
+            >
               {renderText(cleanParagraph)}
             </p>
           );
@@ -231,12 +249,12 @@ export function AnalysisRenderer({ content }: { content: string }) {
 
   const renderParagraphs = (text: string) => {
     const paragraphs = text.split(/\n\s*\n/).filter((p) => p.trim());
-    
+
     if (paragraphs.length <= 1) {
       // Single paragraph - handle line breaks within it
       const singlePara = text.trim();
       if (!singlePara) return null;
-      
+
       return (
         <p className="text-sm leading-relaxed text-foreground">
           {renderText(singlePara)}
@@ -245,9 +263,12 @@ export function AnalysisRenderer({ content }: { content: string }) {
     }
 
     return paragraphs.map((paragraph, index) => {
-      const cleanParagraph = paragraph.trim().replace(/\n+/g, ' ');
+      const cleanParagraph = paragraph.trim().replace(/\n+/g, " ");
       return (
-        <p key={index} className="mb-4 last:mb-0 text-sm leading-relaxed text-foreground">
+        <p
+          key={index}
+          className="mb-4 last:mb-0 text-sm leading-relaxed text-foreground"
+        >
           {renderText(cleanParagraph)}
         </p>
       );
@@ -255,8 +276,8 @@ export function AnalysisRenderer({ content }: { content: string }) {
   };
 
   const renderText = (text: string): React.ReactNode => {
-    if (!text || typeof text !== 'string') return text;
-    
+    if (!text || typeof text !== "string") return text;
+
     const parts: React.ReactNode[] = [];
     const remaining = text.trim();
     let keyCounter = 0;
@@ -285,7 +306,10 @@ export function AnalysisRenderer({ content }: { content: string }) {
 
       if (boldText) {
         parts.push(
-          <strong key={`bold-${keyCounter++}`} className="font-semibold text-foreground">
+          <strong
+            key={`bold-${keyCounter++}`}
+            className="font-semibold text-foreground"
+          >
             {boldText}
           </strong>
         );
@@ -339,9 +363,7 @@ export function AnalysisRenderer({ content }: { content: string }) {
 
   return (
     <div className="prose prose-sm max-w-none">
-      <div className="space-y-1">
-        {renderContent(content)}
-      </div>
+      <div className="space-y-1">{renderContent(content)}</div>
     </div>
   );
 }

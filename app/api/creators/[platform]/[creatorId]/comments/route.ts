@@ -24,7 +24,6 @@ export async function POST(
   const content = (body?.comment || body?.content || "").toString();
   if (!content.trim())
     return NextResponse.json({ error: "Empty comment" }, { status: 400 });
-  const now = Date.now();
   const id =
     globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2);
   const { creatorId, platform } = await context.params;
