@@ -294,7 +294,10 @@ Return only the search query, nothing else.`;
        */
       let factCheckAnalysis = "";
       if (searchContent.trim()) {
-        const factCheckPrompt = `You are a fact-checker analyzing content against credible sources. 
+        const factCheckPrompt = `You are a fact-checker analyzing content against credible sources. Your analysis will be used to populate TWO SEPARATE SECTIONS:
+
+1. **ANALYSIS SECTION**: Core fact-checking findings and evidence
+2. **ORIGIN TRACING SECTION**: Separate detailed investigation of claim origins and belief psychology
 
 Content to verify:
 Title: ${title || "N/A"}
@@ -305,24 +308,31 @@ Credible sources found:
 ${searchContent}
 
 Please provide a comprehensive fact-check analysis with:
+
+**FOR THE ANALYSIS SECTION:**
 1. Overall verification status (verified/misleading/unverifiable)
 2. Evidence from the credible sources provided
 3. Specific claims that are accurate or inaccurate
 4. Reasoning behind your assessment
 5. Any biases or credibility concerns
-6. If the content is false or misleading, add:
-   - Likely origin of the claim (with earliest known appearances, links, or citations)
-   - Propagation paths (platforms/influencers/forums) if identifiable
-   - Psychology/science-backed reasons why people might believe this (e.g., confirmation bias, motivated reasoning, narrative appeal), with references if possible
+6. Source credibility evaluation
+
+**FOR THE ORIGIN TRACING SECTION (separate from analysis):**
+If the content is false, misleading, or contains dubious claims, provide detailed:
+- Likely origin of the claim (with earliest known appearances, links, or citations)
+- How the claim evolved and spread across platforms
+- Specific transformations of the narrative on different platforms
+- Timeline of propagation if identifiable
+- Psychology/science-backed reasons why people might believe this (e.g., confirmation bias, motivated reasoning, narrative appeal), with academic references if possible
 
 Format your response clearly with sections for:
-- Conclusion and Summary
-- Accurate Information 
-- Misleading Information (if any)
-- Source Analysis
-- Reasoning
-- Origin Tracing (if applicable)
-- Why People Believe This (with scientific references if available)`;
+- **Conclusion and Summary** (for Analysis section)
+- **Accurate Information** (for Analysis section)
+- **Misleading Information** (for Analysis section, if any)
+- **Source Analysis** (for Analysis section)
+- **Reasoning** (for Analysis section)
+- **Origin Tracing** (separate section - detailed investigation of claim origins, evolution, and propagation)
+- **Why People Believe This** (separate section - psychological drivers with scientific references)`;
 
         const { text } = await generateText({
           model: textModel(),

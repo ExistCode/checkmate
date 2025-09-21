@@ -323,7 +323,7 @@ export function AnalysisRenderer({ content }: { content: string }) {
   return (
     <div className="space-y-4">
       {/* Auto-render diagram when available */}
-      {diagramData && !loading && (
+      {/* {diagramData && !loading && (
         <OriginTracingDiagram
           originTracing={diagramData.originTracing}
           beliefDrivers={diagramData.beliefDrivers}
@@ -332,7 +332,7 @@ export function AnalysisRenderer({ content }: { content: string }) {
           content={diagramData.claim ?? content}
           allLinks={diagramData.allLinks}
         />
-      )}
+      )} */}
       
       {/* Show loading state for diagram */}
       {loading && (

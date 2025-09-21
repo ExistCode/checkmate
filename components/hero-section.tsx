@@ -26,6 +26,7 @@ import { useCognitoAuth } from "@/lib/cognito/client";
 import { toast } from "sonner";
 import { AnalysisRenderer } from "@/components/analysis-renderer";
 import { useLanguage } from "@/components/language-provider";
+import { OriginTracingDiagram } from "@/components/analysis/origin-tracing-diagram";
 import Link from "next/link";
 
 interface HeroSectionProps {
@@ -599,28 +600,6 @@ This is a demonstration of how our AI fact-checking system would analyze the con
                                 {currentData.requiresFactCheck ? "Yes" : "No"}
                               </Badge>
                             </div>
-                            {currentData.factCheck && (
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm">
-                                  Verification Status:
-                                </span>
-                                <Badge
-                                  variant={
-                                    (
-                                      currentData.factCheck as unknown as FactCheckResult
-                                    ).isVerified
-                                      ? "default"
-                                      : "outline"
-                                  }
-                                >
-                                  {(
-                                    currentData.factCheck as unknown as FactCheckResult
-                                  ).isVerified
-                                    ? "Verified"
-                                    : "Pending"}
-                                </Badge>
-                              </div>
-                            )}
                           </div>
                         </div>
 
@@ -842,44 +821,6 @@ This is a demonstration of how our AI fact-checking system would analyze the con
                                       </div>
                                     )}
 
-                                  {(
-                                    currentData.factCheck as unknown as FactCheckResult
-                                  ).originTracing?.hypothesizedOrigin && (
-                                    <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
-                                      <p className="font-medium mb-2 text-base">Origin:</p>
-                                      <AnalysisRenderer
-                                        content={
-                                          (
-                                            currentData.factCheck as unknown as FactCheckResult
-                                          ).originTracing!.hypothesizedOrigin as string
-                                        }
-                                      />
-                                    </div>
-                                  )}
-
-                                  {(
-                                    currentData.factCheck as unknown as FactCheckResult
-                                  ).beliefDrivers &&
-                                    (
-                                      currentData.factCheck as unknown as FactCheckResult
-                                    ).beliefDrivers!.length > 0 && (
-                                      <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
-                                        <p className="font-medium mb-2 text-base">
-                                          Why People Believe This:
-                                        </p>
-                                        <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
-                                          {(
-                                            currentData.factCheck as unknown as FactCheckResult
-                                          ).beliefDrivers!
-                                            .slice(0, 5)
-                                            .map((d, i) => (
-                                              <li key={i}>
-                                                <span className="font-medium">{d.name}:</span> {d.description}
-                                              </li>
-                                            ))}
-                                        </ul>
-                                      </div>
-                                    )}
 
                                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                                     <span>
@@ -903,6 +844,83 @@ This is a demonstration of how our AI fact-checking system would analyze the con
                                 </div>
                               </CardContent>
                             </Card>
+                          </div>
+                        )}
+
+                        {/* Origin Tracing */}
+                        {currentData.factCheck && (
+                          currentData.factCheck as unknown as FactCheckResult
+                        ).originTracing?.hypothesizedOrigin && (
+                          <div className="space-y-3">
+                            <h4 className="font-medium flex items-center gap-2">
+                              <ShieldCheckIcon className="h-4 w-4" />
+                              Origin Tracing
+                            </h4>
+                            <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg space-y-4">
+                              {/* Text content */}
+                              <div>
+                                <AnalysisRenderer
+                                  content={
+                                    (
+                                      currentData.factCheck as unknown as FactCheckResult
+                                    ).originTracing!.hypothesizedOrigin as string
+                                  }
+                                />
+                              </div>
+                              {/* Origin Tracing Diagram */}
+                              <div className="mt-4">
+                                <OriginTracingDiagram
+                                  originTracing={
+                                    (currentData.factCheck as unknown as FactCheckResult).originTracing
+                                  }
+                                  beliefDrivers={
+                                    (currentData.factCheck as unknown as FactCheckResult).beliefDrivers
+                                  }
+                                  sources={
+                                    (currentData.factCheck as unknown as FactCheckResult).sources?.map(source => ({
+                                      url: source.url,
+                                      title: source.title,
+                                      source: source.source,
+                                      credibility: source.relevance || 0.5
+                                    }))
+                                  }
+                                  verdict={
+                                    (currentData.factCheck as unknown as FactCheckResult).verdict as 'verified' | 'misleading' | 'false' | 'unverified' | 'satire'
+                                  }
+                                  content={
+                                    (currentData.factCheck as unknown as FactCheckResult).content
+                                  }
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Belief Drivers */}
+                        {currentData.factCheck && (
+                          currentData.factCheck as unknown as FactCheckResult
+                        ).beliefDrivers &&
+                          (
+                            currentData.factCheck as unknown as FactCheckResult
+                          ).beliefDrivers!.length > 0 && (
+                          <div className="space-y-3">
+                            <h4 className="font-medium flex items-center gap-2">
+                              <ShieldCheckIcon className="h-4 w-4" />
+                              Why People Believe This
+                            </h4>
+                            <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+                              <ul className="list-disc pl-5 space-y-1 text-sm text-muted-foreground">
+                                {(
+                                  currentData.factCheck as unknown as FactCheckResult
+                                ).beliefDrivers!
+                                  .slice(0, 5)
+                                  .map((d, i) => (
+                                    <li key={i}>
+                                      <span className="font-medium">{d.name}:</span> {d.description}
+                                    </li>
+                                  ))}
+                              </ul>
+                            </div>
                           </div>
                         )}
 
