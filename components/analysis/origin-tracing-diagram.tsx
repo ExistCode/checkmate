@@ -952,7 +952,7 @@ export function OriginTracingDiagram({
   }
 
   return (
-    <Card className="w-full h-[1000px] p-3 shadow-lg mb-6">
+    <Card className="w-full h-[600px] p-3 shadow-lg mb-6">
       <div className="h-full">
         <div className="mb-3">
           <h3 className="text-lg font-bold mb-1 flex items-center gap-2">
