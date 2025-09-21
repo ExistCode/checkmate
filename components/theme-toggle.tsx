@@ -10,6 +10,27 @@ import { Button } from "@/components/ui/button";
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
   const { t } = useLanguage();
+  const [mounted, setMounted] = React.useState(false);
+
+  // Prevent hydration mismatch by only rendering after mount
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    // Return a placeholder that matches the button structure but without theme-dependent content
+    return (
+      <Button
+        variant="outline"
+        size="icon"
+        aria-label={t.toggleTheme}
+        disabled
+      >
+        <div className="h-[1.2rem] w-[1.2rem]" />
+        <span className="sr-only">{t.toggleTheme}</span>
+      </Button>
+    );
+  }
 
   // Determine the next theme
   const nextTheme = theme === "dark" ? "light" : "dark";
