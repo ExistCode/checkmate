@@ -61,7 +61,7 @@ interface FactCheckResult {
 
 export function HeroSection({ initialUrl = "" }: HeroSectionProps) {
   const [url, setUrl] = useState(initialUrl);
-  const [isAnalysisExpanded, setIsAnalysisExpanded] = useState(false);
+  const [isAnalysisExpanded, setIsAnalysisExpanded] = useState(true);
   const [isDetailedAnalysisExpanded, setIsDetailedAnalysisExpanded] =
     useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -306,16 +306,34 @@ This claim appears to have originated from legitimate news sources around early 
               name: "Source Credibility",
               description:
                 "People trust this information because it comes from established, reputable news organizations with strong fact-checking standards.",
+              references: [
+                {
+                  title: "How to Spot Reliable News Sources: A Practical Guide",
+                  url: "https://example.com/spotting-reliable-sources",
+                },
+              ],
             },
             {
               name: "Consensus Reporting",
               description:
                 "Multiple independent news sources reporting the same facts increases confidence in the information's accuracy.",
+              references: [
+                {
+                  title: "Why Multiple Sources Matter: Lessons from Viral Misinformation Cases",
+                  url: "https://example.com/multiple-sources-matter",
+                },
+              ],
             },
             {
               name: "Authority Bias",
               description:
                 "Information from recognized news authorities is more readily believed due to their established reputation.",
+              references: [
+                {
+                  title: "When Trusted Sources Get It Wrong: Real Examples and What We Can Learn",
+                  url: "https://example.com/trusted-sources-wrong",
+                },
+              ],
             },
           ],
         },
@@ -393,8 +411,8 @@ This claim appears to have originated from legitimate news sources around early 
                 "People trust this information because it comes from established, reputable news organizations with strong fact-checking standards.",
               references: [
                 {
-                  title: "Trust in News Media Research",
-                  url: "https://example.com/trust-research",
+                  title: "How to Spot Reliable News Sources: A Practical Guide",
+                  url: "https://example.com/spotting-reliable-sources",
                 },
               ],
             },
@@ -402,11 +420,23 @@ This claim appears to have originated from legitimate news sources around early 
               name: "Consensus Reporting",
               description:
                 "Multiple independent news sources reporting the same facts increases confidence in the information's accuracy.",
+              references: [
+                {
+                  title: "Why Multiple Sources Matter: Lessons from Viral Misinformation Cases",
+                  url: "https://example.com/multiple-sources-matter",
+                },
+              ],
             },
             {
               name: "Authority Bias",
               description:
                 "Information from recognized news authorities is more readily believed due to their established reputation.",
+              references: [
+                {
+                  title: "When Trusted Sources Get It Wrong: Real Examples and What We Can Learn",
+                  url: "https://example.com/trusted-sources-wrong",
+                },
+              ],
             },
           ],
           sources: [
@@ -612,11 +642,8 @@ This claim appears to have originated from legitimate news sources around early 
         .split("\n")
         .filter((p) => p.trim().length > 50);
       if (paragraphs.length > 0) {
-        // Get the first substantial paragraph and truncate if needed
-        const firstParagraph = paragraphs[0].trim();
-        return firstParagraph.length > 200
-          ? firstParagraph.substring(0, 200) + "..."
-          : firstParagraph;
+        // Get the first substantial paragraph
+        return paragraphs[0].trim();
       }
     }
 
@@ -806,9 +833,9 @@ This claim appears to have originated from legitimate news sources around early 
                     <AlertCircleIcon className="h-5 w-5 text-red-500" />
                   )}
                   {result?.success || mockResult?.success
-                    ? mockResult
-                      ? "Mock Analysis Complete"
-                      : t.analysisComplete
+                    ? result?.success
+                      ? t.analysisComplete
+                      : "Mock Analysis Complete"
                     : "Analysis Failed"}
                 </CardTitle>
               </CardHeader>

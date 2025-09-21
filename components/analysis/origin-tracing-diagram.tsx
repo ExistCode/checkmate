@@ -14,7 +14,6 @@ import {
   Handle,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { computeCredibilityFromUrl } from '@/lib/analysis/parseOriginTracing';
 import { Card } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { 
@@ -35,6 +34,199 @@ import {
   TrendingUp,
   Share2
 } from 'lucide-react';
+
+// Helper function to parse simple markdown to text for plain text contexts
+const parseMarkdownToText = (text: string): string => {
+  if (!text || typeof text !== 'string') return '';
+  
+  return text
+    // Remove markdown headers
+    .replace(/^#{1,6}\s+/gm, '')
+    // Remove bold/italic markers but keep the text
+    .replace(/\*\*([^*]+)\*\*/g, '$1') // **bold**
+    .replace(/\*([^*]+)\*/g, '$1') // *italic*
+    .replace(/__([^_]+)__/g, '$1') // __bold__
+    .replace(/_([^_]+)_/g, '$1') // _italic_
+    // Remove strikethrough
+    .replace(/~~([^~]+)~~/g, '$1')
+    // Remove code blocks and inline code
+    .replace(/```[\s\S]*?```/g, '[code block]')
+    .replace(/`([^`]+)`/g, '$1')
+    // Remove links but keep text
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    // Remove images
+    .replace(/!\[([^\]]*)\]\([^)]+\)/g, '$1')
+    // Remove list markers
+    .replace(/^[\s]*[-*+]\s+/gm, '')
+    .replace(/^[\s]*\d+\.\s+/gm, '')
+    // Remove blockquotes
+    .replace(/^>\s+/gm, '')
+    // Remove HTML tags
+    .replace(/<[^>]*>/g, '')
+    .trim();
+};
+
+// Helper function to parse markdown and render as JSX elements
+const parseMarkdownToJSX = (text: string): React.ReactNode[] => {
+  if (!text || typeof text !== 'string') return [];
+  
+  const elements: React.ReactNode[] = [];
+  
+  // Split text by lines to handle different markdown elements
+  const lines = text.split('\n');
+  
+  lines.forEach((line, lineIndex) => {
+    if (!line.trim()) return;
+    
+    
+    // Process inline markdown elements
+    const processInlineMarkdown = (text: string): React.ReactNode[] => {
+      const parts: React.ReactNode[] = [];
+      let remaining = text;
+      let partIndex = 0;
+      
+      // Process bold text **text**
+      remaining = remaining.replace(/\*\*([^*]+)\*\*/g, (match, content) => {
+        parts.push(<strong key={`bold-${partIndex++}`}>{content}</strong>);
+        return `__BOLD_${parts.length - 1}__`;
+      });
+      
+      // Process italic text *text*
+      remaining = remaining.replace(/\*([^*]+)\*/g, (match, content) => {
+        parts.push(<em key={`italic-${partIndex++}`}>{content}</em>);
+        return `__ITALIC_${parts.length - 1}__`;
+      });
+      
+      // Process inline code `code`
+      remaining = remaining.replace(/`([^`]+)`/g, (match, content) => {
+        parts.push(<code key={`code-${partIndex++}`} className="bg-gray-100 px-1 rounded text-xs">{content}</code>);
+        return `__CODE_${parts.length - 1}__`;
+      });
+      
+      // Process links [text](url)
+      remaining = remaining.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, linkText, url) => {
+        parts.push(
+          <a key={`link-${partIndex++}`} href={url} className="text-blue-600 underline text-xs" target="_blank" rel="noopener noreferrer">
+            {linkText}
+          </a>
+        );
+        return `__LINK_${parts.length - 1}__`;
+      });
+      
+      // Split remaining text and insert processed parts
+      const textParts = remaining.split(/(__(?:BOLD|ITALIC|CODE|LINK)_\d+__)/);
+      const result: React.ReactNode[] = [];
+      
+      textParts.forEach((part, index) => {
+        if (part.startsWith('__') && part.endsWith('__')) {
+          const match = part.match(/__(?:BOLD|ITALIC|CODE|LINK)_(\d+)__/);
+          if (match) {
+            const partIndex = parseInt(match[1]);
+            result.push(parts[partIndex]);
+          }
+        } else if (part) {
+          result.push(<span key={`text-${index}`}>{part}</span>);
+        }
+      });
+      
+      return result.length > 0 ? result : [text];
+    };
+    
+    // Handle headers
+    if (line.match(/^#{1,6}\s+/)) {
+      const headerMatch = line.match(/^(#{1,6})\s+(.+)/);
+      if (headerMatch) {
+        const headerText = headerMatch[2];
+        // Use div with font styling instead of dynamic header tags to avoid TypeScript issues
+        elements.push(
+          <div key={`header-${lineIndex}`} className="font-bold text-xs mb-1">
+            {processInlineMarkdown(headerText)}
+          </div>
+        );
+        return;
+      }
+    }
+    
+    // Handle list items
+    if (line.match(/^[\s]*[-*+]\s+/) || line.match(/^[\s]*\d+\.\s+/)) {
+      const listMatch = line.match(/^[\s]*(?:[-*+]|\d+\.)\s+(.+)/);
+      if (listMatch) {
+        elements.push(
+          <div key={`list-${lineIndex}`} className="flex items-start gap-1 text-xs mb-1">
+            <span className="text-gray-500 mt-0.5">•</span>
+            <span>{processInlineMarkdown(listMatch[1])}</span>
+          </div>
+        );
+        return;
+      }
+    }
+    
+    // Handle blockquotes
+    if (line.match(/^>\s+/)) {
+      const quoteMatch = line.match(/^>\s+(.+)/);
+      if (quoteMatch) {
+        elements.push(
+          <div key={`quote-${lineIndex}`} className="border-l-2 border-gray-300 pl-2 text-xs italic text-gray-600 mb-1">
+            {processInlineMarkdown(quoteMatch[1])}
+          </div>
+        );
+        return;
+      }
+    }
+    
+    // Handle regular paragraphs
+    elements.push(
+      <span key={`para-${lineIndex}`} className="text-xs">
+        {processInlineMarkdown(line)}
+      </span>
+    );
+  });
+  
+  return elements;
+};
+
+// Helper function to format text content for node display (removes markdown for plain text)
+const formatNodeText = (text: string | undefined, maxLength: number = 200): string => {
+  if (!text || typeof text !== 'string') return '';
+  
+  // Parse markdown to plain text
+  const cleanText = parseMarkdownToText(text);
+  
+  // Handle line breaks and normalize whitespace
+  const normalizedText = cleanText
+    .replace(/\n\s*\n/g, '\n') // Remove excessive line breaks
+    .replace(/\s+/g, ' ') // Normalize multiple spaces
+    .trim();
+  
+  // Truncate if too long
+  if (normalizedText.length > maxLength) {
+    return normalizedText.substring(0, maxLength).trim() + '...';
+  }
+  
+  return normalizedText;
+};
+
+// Helper function to format multiline text with markdown rendering
+const formatMultilineText = (text: string | undefined, maxLines: number = 3): React.ReactElement => {
+  if (!text || typeof text !== 'string') return <></>;
+  
+  // Parse markdown to JSX elements
+  const elements = parseMarkdownToJSX(text);
+  
+  // Limit the number of elements displayed
+  const limitedElements = elements.slice(0, maxLines);
+  
+  return (
+    <div className="space-y-1">
+      {limitedElements.map((element, index) => (
+        <div key={index}>{element}</div>
+      ))}
+      {elements.length > maxLines && (
+        <div className="text-xs text-gray-500 italic">...</div>
+      )}
+    </div>
+  );
+};
 
 interface OriginTracingData {
   hypothesizedOrigin?: string;
@@ -199,7 +391,9 @@ const OriginNode = ({ data }: { data: NodeData }) => (
       </div>
       <div className="font-semibold text-blue-900 text-sm">Original Source</div>
     </div>
-    <div className="text-sm text-blue-800 leading-relaxed">{data.label}</div>
+    <div className="text-sm text-blue-800 leading-relaxed break-words">
+      {formatMultilineText(data.label, 2)}
+    </div>
   </div>
 );
 
@@ -217,7 +411,9 @@ const PropagationNode = ({ data }: { data: NodeData }) => (
       </div>
       <div className="font-semibold text-orange-900 text-sm">Propagation</div>
     </div>
-    <div className="text-sm text-orange-800 leading-relaxed">{data.label}</div>
+    <div className="text-sm text-orange-800 leading-relaxed break-words">
+      {formatMultilineText(data.label, 2)}
+    </div>
   </div>
 );
 
@@ -234,12 +430,16 @@ const EvolutionNode = ({ data }: { data: NodeData }) => (
         {getPlatformIcon(data.platform || data.label)}
       </div>
       <div className="font-semibold text-purple-900 text-sm">
-        {data.platform || 'Evolution'}
+        {formatNodeText(data.platform || 'Evolution', 50)}
       </div>
     </div>
-    <div className="text-sm text-purple-800 leading-relaxed mb-2">{data.label}</div>
+    <div className="text-sm text-purple-800 leading-relaxed mb-2 break-words">
+      {formatMultilineText(data.label, 2)}
+    </div>
     {data.impact && (
-      <div className="text-xs text-purple-600 italic">Impact: {data.impact}</div>
+      <div className="text-xs text-purple-600 italic break-words">
+        Impact: {formatNodeText(data.impact, 80)}
+      </div>
     )}
   </div>
 );
@@ -275,7 +475,9 @@ const ClaimNode = ({ data }: { data: NodeData }) => {
         <Icon className="h-5 w-5" />
         <span className="text-base">Current Claim</span>
       </div>
-      <div className="text-sm mb-3 leading-relaxed">{data.label}</div>
+      <div className="text-sm mb-3 leading-relaxed break-words">
+        {formatMultilineText(data.label, 3)}
+      </div>
       <div className="flex items-center gap-2">
         <Badge variant="outline" className="text-xs font-medium">
           {data.verdict}
@@ -305,13 +507,15 @@ const SourceNode = ({ data }: { data: NodeData }) => (
         </Badge>
       </div>
     </div>
-    <div className="text-sm text-emerald-800 mb-3 leading-relaxed">{data.label}</div>
+    <div className="text-sm text-emerald-800 mb-3 leading-relaxed break-words">
+      {formatMultilineText(data.label, 2)}
+    </div>
     {data.url && (
       <a
         href={data.url}
         target="_blank"
         rel="noopener noreferrer"
-        className="inline-flex items-center gap-2 text-xs text-emerald-700 hover:text-emerald-900 underline font-medium"
+        className="inline-flex items-center gap-2 text-xs text-emerald-700 hover:text-emerald-900 underline font-medium break-all"
       >
         View Source <ExternalLink className="h-3 w-3" />
       </a>
@@ -333,8 +537,12 @@ const BeliefDriverNode = ({ data }: { data: NodeData }) => (
       </div>
       <div className="font-semibold text-violet-900 text-sm">Why People Believe</div>
     </div>
-    <div className="text-sm text-violet-800 font-medium mb-2">{data.name}</div>
-    <div className="text-xs text-violet-700 leading-relaxed mb-2">{data.description}</div>
+    <div className="text-sm text-violet-800 font-medium mb-2 break-words">
+      {formatNodeText(data.name, 60)}
+    </div>
+    <div className="text-xs text-violet-700 leading-relaxed mb-2 break-words">
+      {formatMultilineText(data.description, 3)}
+    </div>
     {Array.isArray(data.references) && data.references.length > 0 && (
       <div className="mt-2 space-y-1">
         {data.references.slice(0, 2).map((ref, idx) => (
@@ -346,7 +554,7 @@ const BeliefDriverNode = ({ data }: { data: NodeData }) => (
             className="block text-[11px] text-violet-800 underline break-all"
             title={ref.title}
           >
-            {ref.title}
+            {formatNodeText(ref.title, 50)}
           </a>
         ))}
       </div>
@@ -877,7 +1085,7 @@ export function OriginTracingDiagram({
           y: LAYOUT.sources.y + row * 130 // Reduced row spacing for multiple rows
         },
         data: { 
-          label: source.source || (source.url ? new URL(source.url).hostname.replace(/^www\./, '') : source.title), 
+          label: source.title, 
           credibility: source.credibility,
           url: source.url 
         },
@@ -896,8 +1104,12 @@ export function OriginTracingDiagram({
       });
     });
 
-    // Add all links at bottom - limit and space appropriately
-    allLinks.slice(0, 8).forEach((link, index) => { // Limit to 8 for better layout
+    // Add all links at bottom - only if they're not already represented in sources
+    // Filter out links that are already in the main sources to avoid duplication
+    const sourceUrls = new Set(sources.map(source => source.url));
+    const uniqueLinks = allLinks.filter(link => !sourceUrls.has(link.url));
+    
+    uniqueLinks.slice(0, 8).forEach((link, index) => { // Limit to 8 for better layout
       const linkNodeId = `alllink-${nodeId++}`;
       linkNodes.push(linkNodeId);
       const col = index % LAYOUT.allLinks.maxPerRow;
@@ -909,6 +1121,10 @@ export function OriginTracingDiagram({
         LAYOUT.centerX + 600 - LAYOUT.nodeWidth
       );
       
+      // Find matching source to get actual credibility, or use a default
+      const matchingSource = sources.find(source => source.url === link.url);
+      const credibility = matchingSource?.credibility ?? 0.5; // Use actual credibility or neutral default
+      
       nodes.push({
         id: linkNodeId,
         type: 'source',
@@ -918,7 +1134,7 @@ export function OriginTracingDiagram({
         },
         data: {
           label: link.title || link.url,
-          credibility: computeCredibilityFromUrl(link.url),
+          credibility: Math.round(credibility * 100), // Convert to percentage like other sources
           url: link.url,
         },
       });

@@ -12,7 +12,7 @@ export const db = drizzle(client);
 
 // Temporary debug to validate DB connectivity at runtime
 try {
-  // eslint-disable-next-line no-console
+   
   console.log(
     "[db] Initialized postgres client (masked url prefix)=",
     (() => {

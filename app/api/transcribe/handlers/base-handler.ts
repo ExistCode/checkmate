@@ -53,7 +53,7 @@ export interface FactCheckResult {
   beliefDrivers?: Array<{
     name: string; // e.g., confirmation bias, availability heuristic, motivated reasoning
     description: string; // brief, user-friendly explanation
-    references?: Array<{ title: string; url: string }>; // optional scientific refs
+    references?: Array<{ title: string; url: string }>; // practical articles explaining similar cases
   }>;
 }
 
@@ -178,7 +178,7 @@ Guidelines (optimize for rich, comprehensive node coverage without fabrication):
 - For evolutionSteps: Show HOW the belief/claim transformed on each platform, not just platform names. Include the specific adaptation, amplification, or mutation that occurred.
 - For sources: Include both 'title' and 'source' fields where 'source' is the publication/organization name (e.g., "Reuters", "Snopes") and 'title' is the article title.
 - Include dates and URLs whenever available. Prefer diverse platforms (forums, social, influencers, blogs, news, messaging).
-- If the text mentions studies or articles that support belief drivers, include up to 2 references per driver.
+- For beliefDrivers references: Link to practical debunking articles, fact-check explanations, or accessible journalism that explains similar cases - NOT academic papers. Focus on articles that help laypeople understand how misinformation spreads in real-world scenarios.
 - Deduplicate obvious duplicates while preserving distinct sources.
 
 TEXT START\n${content}\nTEXT END

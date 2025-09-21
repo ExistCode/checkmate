@@ -11,7 +11,7 @@ export async function upsertUser(u: {
   username?: string | null;
 }) {
   // Temporary debug log
-  // eslint-disable-next-line no-console
+   
   console.log("[db] upsertUser", { id: u.id, email: u.email });
   await db
     .insert(users)
