@@ -5,9 +5,9 @@ export interface UserItem {
   SK: "PROFILE";
   type: "USER";
   userId: string;
-  // Generic auth identity (supports Clerk or Cognito)
-  authProvider: "clerk" | "cognito";
-  authSubject: string; // Clerk ID or Cognito sub
+  // Generic auth identity (legacy)
+  authProvider: "local";
+  authSubject: string;
   // Optional legacy fields for compatibility
   clerkId?: string;
   email: string;

@@ -24,8 +24,12 @@ import {
   gsi9AnalysisById,
 } from "./keys";
 
-const TABLE = (process.env.DDB_TABLE || process.env.DDB_TABLE_ANALYSES) as string;
-if (!TABLE) throw new Error("DynamoDB table name is not configured. Set DDB_TABLE or DDB_TABLE_ANALYSES.");
+const TABLE = (process.env.DDB_TABLE ||
+  process.env.DDB_TABLE_ANALYSES) as string;
+if (!TABLE)
+  throw new Error(
+    "DynamoDB table name is not configured. Set DDB_TABLE or DDB_TABLE_ANALYSES."
+  );
 
 // Builders — construct fully-formed items matching the single-table schema
 export const buildUserItem = (
@@ -182,8 +186,7 @@ export const getUserByAuthSubject = async (
 
 export const getUserByClerkId = (clerkId: string) =>
   getUserByAuthSubject("clerk", clerkId);
-export const getUserByCognitoSub = (sub: string) =>
-  getUserByAuthSubject("cognito", sub);
+// Deprecated: Cognito support removed
 
 export const listAnalysesByUser = async (userId: string, limit = 20) => {
   const res = await ddbDoc.send(

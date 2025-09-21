@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { listAnalysesByCreator } from "@/lib/dynamo/repo";
+import { listAnalysesByCreator } from "@/lib/db/repo";
 
 export async function GET(
   req: NextRequest,
