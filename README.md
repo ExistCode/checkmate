@@ -10,11 +10,11 @@ _AI-Powered Misinformation Detection & Fact-Checking Platform_
 
 ## 🎞️ Presentation Slides
 
-You can view our ImagineHack pitch deck here:
+You can view our Great Malaysia AI Hackathon 2025 pitch deck here:
 
-👉 [Checkmate_Presentation.canva](https://www.canva.com/design/DAGq_0eVW-U/jiqES94FGNgK5V92mGN2PA/edit?utm_content=DAGq_0eVW-U&utm_campaign=designshare&utm_medium=link2&utm_source=sharebutton)
+👉 [Checkmate_Presentation.canva](novelty wise mainly on slides https://www.canva.com/design/DAGzfS1Aohk/l6Wi_7JUqbn8l3GkRLGpwg/edit)
 
-## 🏆 ImagineHack Challenge & Our Approach
+## 🏆 Great Malaysia AI Hackathon 2025 Challenge & Our Approach
 
 ### The Problem We're Solving
 
@@ -36,13 +36,7 @@ As digital citizens, we all play a role in upholding the truth. But the scale an
 4. **Empowers Users** with accessible tools for content verification
 5. **Builds Community Trust** through crowd-sourced verification mechanisms
 
-## 👥 Team Members
 
-| Name                         | Role                                   | Contributions                                                                                    |
-| ---------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| **Mohtasham Murshid Madani** | Team Leader / Full Stack Developer     | Project architecture, AI integration, frontend development, API design                           |
-| **Syed Amaan Geelani**       | Mobile + Extension + Backend Developer | Mobile app development (Flutter wrapper), browser extension, backend services, API optimization. |
-| **Ayaan Izhar**              | Backend + Documentation + Designer     | Backend Integration, Sys arch Diagram, , AI model integration, slides, documentation, Ideator.   |
 
 ## 🚀 Local Development Setup
 
@@ -113,27 +107,7 @@ npm run dev
 
 For new developers joining the project, comprehensive documentation is available:
 
-### 🚀 Quick Start
 
-- **[Developer Onboarding Guide](./docs/DEVELOPER_ONBOARDING.md)** - Complete setup and getting started guide
-
-### 📖 Core Documentation
-
-- **[Architecture Guide](./docs/ARCHITECTURE_GUIDE.md)** - System design and technology overview
-- **[Database Guide](./docs/DATABASE_GUIDE.md)** - Convex schema, operations, and patterns
-- **[Hooks Guide](./docs/HOOKS_GUIDE.md)** - Custom React hooks for data management
-- **[API Guide](./docs/API_GUIDE.md)** - API endpoints and interfaces
-
-### 🔧 Existing Guides
-
-- **[Refactoring Guide](./docs/REFACTORING_GUIDE.md)** - Code improvement guidelines
-- **[RSC Refactoring Guide](./docs/RSC_REFACTORING_GUIDE.md)** - React Server Components migration
-
-**New developers should start with the [Developer Onboarding Guide](./docs/DEVELOPER_ONBOARDING.md) for a complete setup walkthrough.**
-
-## 🔑 Environment Variables
-
-Create a `.env.local` file in the root of your project and add the following variables:
 
 ```env
 VERCEL_URL=http://localhost:3000
@@ -163,37 +137,6 @@ FIRECRAWL_API_KEY=fc-FAKEKEYFORDEMO0987654321
 - **Browser Extension** - Chrome/Edge extension for real-time fact-checking overlay  
   \_Codebase: see `@/checkmate_browser_extension/`
 
-### Backend & Database
-
-- **Convex** - Real-time backend-as-a-service
-- **Clerk** - Authentication and user management
-- **PostgreSQL** - Structured data storage (via Convex)
-- **Serverless Functions** - Auto-scaling API endpoints
-
-### AI & Machine Learning
-
-- **OpenAI GPT-4** - Large language model for analysis
-- **OpenAI Whisper** - Speech-to-text transcription
-- **Vercel AI SDK** - AI model integration
-- **Natural Language Processing** - Content analysis and sentiment detection
-
-### External APIs & Services
-
-- **TikTok API** (`@tobyg74/tiktok-api-dl`) - Video content extraction
-- **Twitter Scraper** (`@the-convocation/twitter-scraper`) - Social media analysis
-- **Firecrawl** - Web content scraping and extraction
-- **Web Search APIs** - Real-time fact verification
-
-### Development & Deployment
-
-- **Vercel** - Deployment and hosting
-- **Git/GitHub** - Version control
-- **ESLint** - Code quality and consistency
-- **PostCSS** - CSS processing
-- **Flutter** - Used for the mobile wrapper  
-  _Codebase: see `@/flutter_wrapper/`_
-- **Browser Extension** - Built for Chrome/Edge for in-browser fact-checking  
-  _Codebase: see `@/browser_extension/`_
 
 ## 🚀 Key Features & Capabilities
 
@@ -242,13 +185,6 @@ FIRECRAWL_API_KEY=fc-FAKEKEYFORDEMO0987654321
 
 ## 📱 Usage Instructions & Demo
 
-### Getting Started
-
-1. **Visit the Platform**: Navigate to [checkmate.demo.com] (placeholder)
-2. **Sign Up/Login**: Create account using email or social login
-3. **Paste Content URL**: Enter TikTok, Twitter, or web article URL
-4. **Analyze Content**: Click "Analyze" to start fact-checking process
-5. **Review Results**: Examine credibility scores, fact-check results, and sources
 
 ### Demo Screenshots
 
@@ -527,4 +463,4 @@ MIT License - Open source for educational and research purposes
 
 ---
 
-_Built with ❤️ for the ImagineHack Hackathon 2025 - Fighting misinformation through technology_
+_Built with ❤️ for the Great Malaysia AI Hackathon 2025 - Fighting misinformation through technology_
