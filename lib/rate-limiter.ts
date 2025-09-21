@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { config } from "./config";
 import { ApiError } from "./api-error";
+import { incrementAndGetWindowCount } from "./redisRateLimit";
 
 interface RateLimitOptions {
   windowMs: number;
@@ -57,16 +58,16 @@ function cleanupExpiredEntries(): void {
 }
 
 // Check rate limit
-export function checkRateLimit(
+export async function checkRateLimit(
   request: NextRequest,
   options: RateLimitOptions,
   userId?: string
-): {
+): Promise<{
   allowed: boolean;
   remaining: number;
   resetTime: number;
   retryAfter?: number;
-} {
+}> {
   // Clean up expired entries periodically
   if (Math.random() < 0.01) {
     // 1% chance to cleanup
@@ -78,6 +79,30 @@ export function checkRateLimit(
     : (options.keyGenerator || defaultKeyGenerator)(request);
   const now = Date.now();
   const resetTime = now + options.windowMs;
+
+  // Try Redis-backed limiter if configured
+  try {
+    if (process.env.REDIS_HOST) {
+      const windowSec = Math.floor(options.windowMs / 1000);
+      const count = await incrementAndGetWindowCount(key, windowSec);
+      if (count > options.maxRequests) {
+        const retryAfter = Math.ceil((resetTime - now) / 1000);
+        return {
+          allowed: false,
+          remaining: 0,
+          resetTime,
+          retryAfter,
+        };
+      }
+      return {
+        allowed: true,
+        remaining: options.maxRequests - count,
+        resetTime,
+      };
+    }
+  } catch {
+    // fall through to in-memory on any Redis error
+  }
 
   const entry = rateLimitStore.get(key);
 
@@ -117,14 +142,14 @@ export function checkRateLimit(
 export function createRateLimitMiddleware(
   getUserTier?: (userId: string) => "anonymous" | "authenticated" | "premium"
 ) {
-  return function rateLimitMiddleware(
+  return async function rateLimitMiddleware(
     request: NextRequest,
     userId?: string
-  ): {
+  ): Promise<{
     allowed: boolean;
     headers: Record<string, string>;
     error?: ApiError;
-  } {
+  }> {
     // Determine user tier
     const tier = userId
       ? getUserTier?.(userId) || "authenticated"
@@ -132,7 +157,7 @@ export function createRateLimitMiddleware(
     const options = RATE_LIMITS[tier];
 
     // Check rate limit
-    const result = checkRateLimit(request, options, userId);
+    const result = await checkRateLimit(request, options, userId);
 
     // Prepare headers
     const headers: Record<string, string> = {
@@ -170,16 +195,16 @@ export const OPERATION_LIMITS = {
 } as const;
 
 // Operation-specific rate limiter
-export function checkOperationRateLimit(
+export async function checkOperationRateLimit(
   request: NextRequest,
   operation: keyof typeof OPERATION_LIMITS,
   userId?: string
-): {
+): Promise<{
   allowed: boolean;
   remaining: number;
   resetTime: number;
   retryAfter?: number;
-} {
+}> {
   const options = OPERATION_LIMITS[operation];
   const keyGenerator = (req: NextRequest) => {
     const base = userId ? `user:${userId}` : defaultKeyGenerator(req);
