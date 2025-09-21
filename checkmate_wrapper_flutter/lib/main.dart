@@ -31,7 +31,7 @@ class _TikTokShareHandlerState extends State<TikTokShareHandler> {
   late StreamSubscription _intentDataStreamSubscription;
   WebViewController? _webViewController;
   bool _isLoading = true;
-  String _defaultUrl = 'https://checkmate-imaginehack.vercel.app/';
+  String _defaultUrl = 'https://prod.dmsurgvp1argw.amplifyapp.com/';
   String _statusMessage = 'Ready to receive TikTok shares';
 
   @override
@@ -160,7 +160,7 @@ class _TikTokShareHandlerState extends State<TikTokShareHandler> {
   void _loadTikTokInWebView(String tiktokUrl) {
     // URL encode the TikTok link
     String encodedUrl = Uri.encodeComponent(tiktokUrl);
-    String finalUrl = 'https://checkmate-imaginehack.vercel.app/?link=$encodedUrl';
+    String finalUrl = 'https://prod.dmsurgvp1argw.amplifyapp.com/?link=$encodedUrl';
     
     print('Loading URL: $finalUrl');
     
