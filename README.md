@@ -1,6 +1,6 @@
 # Checkmate 🔍
 
-[🌐 Visit the Website](https://checkmate-imaginehack.vercel.app/)
+[🌐 Visit the Website](https://prod.dmsurgvp1argw.amplifyapp.com/)
 
 _AI-Powered Misinformation Detection & Fact-Checking Platform_
 
