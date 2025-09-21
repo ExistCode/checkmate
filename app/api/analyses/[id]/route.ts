@@ -9,7 +9,37 @@ export async function GET(
   const { id } = await context.params;
   const item = await getAnalysisById(id);
   if (!item) return NextResponse.json(null);
-  return NextResponse.json(item);
+
+  const parseJson = (value: unknown) => {
+    if (typeof value === "string") {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return value;
+      }
+    }
+    return value;
+  };
+
+  const transformed = {
+    id: (item as any).id,
+    userId: (item as any).userId,
+    videoUrl: (item as any).videoUrl,
+    transcription: (item as any).transcription
+      ? { text: (item as any).transcription }
+      : null,
+    metadata: parseJson((item as any).metadata) || null,
+    newsDetection: parseJson((item as any).newsDetection) || null,
+    factCheck: parseJson((item as any).factCheck) || null,
+    requiresFactCheck: (item as any).requiresFactCheck === true,
+    creatorCredibilityRating: (item as any).creatorCredibilityRating ?? null,
+    contentCreatorId: (item as any).contentCreatorId ?? null,
+    platform: (item as any).platform ?? null,
+    createdAt: (item as any).createdAt ?? null,
+    updatedAt: (item as any).updatedAt ?? null,
+  };
+
+  return NextResponse.json(transformed);
 }
 
 export async function DELETE(

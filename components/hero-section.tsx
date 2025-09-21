@@ -66,6 +66,7 @@ export function HeroSection({ initialUrl = "" }: HeroSectionProps) {
     useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
+  const [savedId, setSavedId] = useState<string | null>(null);
   const [isMockLoading, setIsMockLoading] = useState(false);
   const [mockResult, setMockResult] = useState<{
     success: boolean;
@@ -181,6 +182,7 @@ export function HeroSection({ initialUrl = "" }: HeroSectionProps) {
     setIsAnalysisExpanded(false);
     setIsDetailedAnalysisExpanded(false);
     setIsSaved(false);
+    setSavedId(null);
     setMockResult(null);
     reset();
   };
@@ -458,7 +460,13 @@ This claim appears to have originated from legitimate news sources around early 
   };
 
   const handleSaveAnalysis = async () => {
-    if (!result?.success || !result.data || !isSignedIn) {
+    const dataSource =
+      result?.success && result.data
+        ? result.data
+        : mockResult?.success && mockResult.data
+          ? mockResult.data
+          : null;
+    if (!dataSource || !isSignedIn) {
       toast.error(t.cannotSave);
       return;
     }
@@ -474,46 +482,53 @@ This claim appears to have originated from legitimate news sources around early 
     try {
       // Prepare the data for saving, mapping to schema format
       const saveData = {
-        videoUrl: result.data.metadata.originalUrl,
-        transcription: result.data.transcription
+        videoUrl: dataSource.metadata.originalUrl,
+        transcription: dataSource.transcription
           ? {
-              text: result.data.transcription.text,
-              language: result.data.transcription.language,
+              text: dataSource.transcription.text,
+              language: dataSource.transcription.language,
               // Note: duration not available from API yet, will be undefined
             }
           : undefined,
-        metadata: result.data.metadata
+        metadata: dataSource.metadata
           ? {
-              title: result.data.metadata.title,
-              description: result.data.metadata.description,
-              creator: result.data.metadata.creator,
-              originalUrl: result.data.metadata.originalUrl,
-              platform: result.data.metadata.platform,
+              title: dataSource.metadata.title,
+              description: dataSource.metadata.description,
+              creator: dataSource.metadata.creator,
+              originalUrl: dataSource.metadata.originalUrl,
+              platform: dataSource.metadata.platform,
             }
           : undefined,
-        newsDetection: result.data.newsDetection
+        newsDetection: dataSource.newsDetection
           ? {
-              hasNewsContent: result.data.newsDetection.hasNewsContent,
-              confidence: result.data.newsDetection.confidence,
-              newsKeywordsFound: result.data.newsDetection.newsKeywordsFound,
-              potentialClaims: result.data.newsDetection.potentialClaims,
-              needsFactCheck: result.data.newsDetection.needsFactCheck,
-              contentType: result.data.newsDetection.contentType,
+              hasNewsContent: dataSource.newsDetection.hasNewsContent,
+              confidence: dataSource.newsDetection.confidence,
+              newsKeywordsFound: dataSource.newsDetection.newsKeywordsFound,
+              potentialClaims: dataSource.newsDetection.potentialClaims,
+              needsFactCheck: dataSource.newsDetection.needsFactCheck,
+              contentType: dataSource.newsDetection.contentType,
             }
           : undefined,
-        factCheck: result.data.factCheck
+        factCheck: dataSource.factCheck
           ? {
               // Map from FactCheckResult to schema format
-              verdict: (result.data.factCheck as unknown as FactCheckResult)
+              verdict: (dataSource.factCheck as unknown as FactCheckResult)
                 .verdict,
-              confidence: (result.data.factCheck as unknown as FactCheckResult)
+              confidence: (dataSource.factCheck as unknown as FactCheckResult)
                 .confidence,
-              explanation: (result.data.factCheck as unknown as FactCheckResult)
+              explanation: (dataSource.factCheck as unknown as FactCheckResult)
                 .explanation,
-              content: (result.data.factCheck as unknown as FactCheckResult)
+              content: (dataSource.factCheck as unknown as FactCheckResult)
                 .content,
+              // Persist full diagram data where available
+              originTracing: (
+                dataSource.factCheck as unknown as FactCheckResult
+              ).originTracing,
+              beliefDrivers: (
+                dataSource.factCheck as unknown as FactCheckResult
+              ).beliefDrivers,
               sources: (
-                result.data.factCheck as unknown as FactCheckResult
+                dataSource.factCheck as unknown as FactCheckResult
               ).sources?.map((source) => ({
                 title: source.title,
                 url: source.url,
@@ -522,13 +537,21 @@ This claim appears to have originated from legitimate news sources around early 
               })),
             }
           : undefined,
-        requiresFactCheck: result.data.requiresFactCheck,
+        requiresFactCheck: dataSource.requiresFactCheck,
         // Use creator credibility rating if available, or default to neutral rating
-        creatorCredibilityRating: result.data.creatorCredibilityRating || 5.0,
+        creatorCredibilityRating:
+          dataSource.creatorCredibilityRating == null
+            ? 5
+            : Math.round(Number(dataSource.creatorCredibilityRating)),
+        // Persist creator linkage for creator pages/filters
+        contentCreatorId: dataSource.metadata?.creator,
       };
 
       // Use enhanced save function to properly handle content creators
-      await saveTikTokAnalysisWithCredibility(saveData);
+      const resp = await saveTikTokAnalysisWithCredibility(saveData);
+      if (resp && resp.id) {
+        setSavedId(resp.id as string);
+      }
 
       setIsSaved(true);
       toast.success(t.analysisSaved);
@@ -1314,6 +1337,19 @@ This claim appears to have originated from legitimate news sources around early 
                                   : isSaving
                                     ? t.saving
                                     : t.saveAnalysis}
+                              </Button>
+                            )}
+
+                            {/* Download after save */}
+                            {isSignedIn && isSaved && savedId && (
+                              <Button asChild variant="outline">
+                                <a
+                                  href={`/api/analyses/${encodeURIComponent(savedId)}/download`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  Download JSON
+                                </a>
                               </Button>
                             )}
 

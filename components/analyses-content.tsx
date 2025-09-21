@@ -27,11 +27,14 @@ import {
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { AnalysisRenderer } from "@/components/analysis-renderer";
+import { OriginTracingDiagram } from "@/components/analysis/origin-tracing-diagram";
 import { CreatorCredibilityDisplay } from "@/components/creator-credibility-display";
 import { useLanguage } from "@/components/language-provider";
 
 const getStatusIcon = (status: string) => {
   switch (status) {
+    case "verified":
+      return <CheckCircleIcon className="h-4 w-4 text-green-500" />;
     case "true":
       return <CheckCircleIcon className="h-4 w-4 text-green-500" />;
     case "false":
@@ -40,6 +43,8 @@ const getStatusIcon = (status: string) => {
       return <AlertTriangleIcon className="h-4 w-4 text-yellow-500" />;
     case "unverifiable":
       return <AlertCircleIcon className="h-4 w-4 text-gray-500" />;
+    case "satire":
+      return <span className="text-purple-500 text-sm">🎭</span>;
     default:
       return <AlertCircleIcon className="h-4 w-4 text-blue-500" />;
   }
@@ -47,6 +52,8 @@ const getStatusIcon = (status: string) => {
 
 const getStatusBadge = (status: string) => {
   switch (status) {
+    case "verified":
+      return <Badge className="bg-green-100 text-green-800">Verified</Badge>;
     case "true":
       return (
         <Badge className="bg-green-100 text-green-800">Verified True</Badge>
@@ -61,6 +68,12 @@ const getStatusBadge = (status: string) => {
       return (
         <Badge className="bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200">
           Unverifiable
+        </Badge>
+      );
+    case "satire":
+      return (
+        <Badge className="bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200">
+          Satire
         </Badge>
       );
     default:
@@ -78,6 +91,7 @@ export function AnalysisPage({ analysisId }: { analysisId: string }) {
   const [expandedClaims, setExpandedClaims] = useState<Record<number, boolean>>(
     {}
   );
+  const [isAnalysisExpanded, setIsAnalysisExpanded] = useState(false);
 
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleDateString("en-US", {
@@ -188,6 +202,21 @@ export function AnalysisPage({ analysisId }: { analysisId: string }) {
                 {t.viewOriginalVideo} <ExternalLink className="h-3 w-3" />
               </a>
 
+              {/* Download JSON of this analysis */}
+              {(analysis as any).id && (
+                <Button asChild variant="outline" size="sm">
+                  <a
+                    href={`/api/analyses/${encodeURIComponent(
+                      (analysis as any).id
+                    )}/download`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Download JSON
+                  </a>
+                </Button>
+              )}
+
               {analysis.metadata?.creator && analysis.metadata?.platform && (
                 <Button asChild variant="outline" size="sm">
                   <Link
@@ -279,12 +308,15 @@ export function AnalysisPage({ analysisId }: { analysisId: string }) {
             {analysis.factCheck.verdict && (
               <Card
                 className={`border-l-4 ${
-                  analysis.factCheck.verdict === "true"
+                  analysis.factCheck.verdict === "true" ||
+                  analysis.factCheck.verdict === "verified"
                     ? "border-l-green-500"
                     : analysis.factCheck.verdict === "false"
                     ? "border-l-red-500"
                     : analysis.factCheck.verdict === "misleading"
                     ? "border-l-yellow-500"
+                    : analysis.factCheck.verdict === "satire"
+                    ? "border-l-purple-500"
                     : "border-l-gray-500"
                 }`}
               >
@@ -309,16 +341,81 @@ export function AnalysisPage({ analysisId }: { analysisId: string }) {
                       </div>
                     </div>
 
+                    {/* Origin Tracing Diagram (matches HeroSection) */}
+                    {(analysis.factCheck as any)?.originTracing
+                      ?.hypothesizedOrigin && (
+                      <div className="mt-4">
+                        <p className="font-medium mb-3 text-base">
+                          Origin Tracing & Belief Evolution:
+                        </p>
+                        <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg">
+                          <OriginTracingDiagram
+                            originTracing={
+                              (analysis.factCheck as any).originTracing
+                            }
+                            beliefDrivers={
+                              (analysis.factCheck as any).beliefDrivers
+                            }
+                            sources={(analysis.factCheck as any).sources?.map(
+                              (s: any) => ({
+                                url: s.url,
+                                title: s.title || s.source,
+                                source: s.source || s.title,
+                                credibility:
+                                  s.credibility ?? s.relevance ?? 0.5,
+                              })
+                            )}
+                            verdict={(analysis.factCheck as any).verdict}
+                            content={(analysis.factCheck as any).content}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Expandable Detailed Analysis Section */}
                     {analysis.factCheck.explanation && (
                       <div className="bg-muted p-4 rounded-lg">
                         <p className="font-medium mb-3 text-base">
                           {t.analysis}:
                         </p>
                         <div>
-                          <AnalysisRenderer
-                            content={analysis.factCheck.explanation}
-                          />
+                          {(() => {
+                            const explanation = (analysis.factCheck as any)
+                              .explanation as string;
+                            const shouldTruncate = explanation.length > 500;
+                            const contentToShow =
+                              shouldTruncate && !isAnalysisExpanded
+                                ? explanation.substring(0, 500) + "..."
+                                : explanation;
+                            return <AnalysisRenderer content={contentToShow} />;
+                          })()}
                         </div>
+                        {(() => {
+                          const explanation = (analysis.factCheck as any)
+                            .explanation as string;
+                          if (!explanation || explanation.length <= 500)
+                            return null;
+                          return (
+                            <button
+                              onClick={() =>
+                                setIsAnalysisExpanded(!isAnalysisExpanded)
+                              }
+                              className="mt-4 text-primary hover:text-primary/80 font-medium transition-colors text-sm flex items-center gap-1"
+                            >
+                              {isAnalysisExpanded ? (
+                                <>
+                                  <ChevronUpIcon className="h-4 w-4" />
+                                  {t.showLess}
+                                </>
+                              ) : (
+                                <>
+                                  <ChevronDownIcon className="h-4 w-4" />
+                                  {t.showMore}
+                                </>
+                              )}
+                            </button>
+                          );
+                        })()}
                       </div>
                     )}
 
@@ -355,11 +452,8 @@ export function AnalysisPage({ analysisId }: { analysisId: string }) {
                         </div>
                       )}
 
-
                     {/* Origin Tracing Text (Fallback) */}
-                    {analysis.factCheck.originTracing?.hypothesizedOrigin && 
-                     !analysis.factCheck.beliefDrivers?.length && 
-                     !analysis.factCheck.sources?.length && (
+                    {analysis.factCheck.originTracing?.hypothesizedOrigin && (
                       <div className="bg-muted p-4 rounded-lg">
                         <p className="font-medium mb-2 text-base">Origin:</p>
                         <div className="text-sm text-muted-foreground">

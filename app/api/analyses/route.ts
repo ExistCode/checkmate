@@ -7,7 +7,35 @@ export async function GET(_req: NextRequest) {
   if (!authContext)
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const items = await listAnalysesByUser(authContext.userId, 50);
-  return NextResponse.json(items);
+
+  const parseJson = (value: unknown) => {
+    if (typeof value === "string") {
+      try {
+        return JSON.parse(value);
+      } catch {
+        return value;
+      }
+    }
+    return value;
+  };
+
+  const transformed = items.map((item: any) => ({
+    id: item.id,
+    userId: item.userId,
+    videoUrl: item.videoUrl,
+    transcription: item.transcription ? { text: item.transcription } : null,
+    metadata: parseJson(item.metadata) || null,
+    newsDetection: parseJson(item.newsDetection) || null,
+    factCheck: parseJson(item.factCheck) || null,
+    requiresFactCheck: item.requiresFactCheck === true,
+    creatorCredibilityRating: item.creatorCredibilityRating ?? null,
+    contentCreatorId: item.contentCreatorId ?? null,
+    platform: item.platform ?? null,
+    createdAt: item.createdAt ?? null,
+    updatedAt: item.updatedAt ?? null,
+  }));
+
+  return NextResponse.json(transformed);
 }
 
 export async function POST(req: NextRequest) {
@@ -27,7 +55,10 @@ export async function POST(req: NextRequest) {
     newsDetection: body.newsDetection,
     factCheck: body.factCheck,
     requiresFactCheck: body.requiresFactCheck === true,
-    creatorCredibilityRating: body.creatorCredibilityRating,
+    creatorCredibilityRating:
+      body.creatorCredibilityRating == null
+        ? undefined
+        : Math.round(Number(body.creatorCredibilityRating)),
     contentCreatorId: body.contentCreatorId,
     platform,
   });

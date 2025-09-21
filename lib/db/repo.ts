@@ -10,9 +10,6 @@ export async function upsertUser(u: {
   imageUrl?: string | null;
   username?: string | null;
 }) {
-  // Temporary debug log
-  // eslint-disable-next-line no-console
-  console.log("[db] upsertUser", { id: u.id, email: u.email });
   await db
     .insert(users)
     .values({
@@ -60,7 +57,10 @@ export async function createAnalysis(input: {
       : null,
     factCheck: input.factCheck ? JSON.stringify(input.factCheck) : null,
     requiresFactCheck: !!input.requiresFactCheck,
-    creatorCredibilityRating: input.creatorCredibilityRating ?? null,
+    creatorCredibilityRating:
+      input.creatorCredibilityRating == null
+        ? null
+        : Math.round(Number(input.creatorCredibilityRating)),
     contentCreatorId: input.contentCreatorId ?? null,
     platform: input.platform ?? null,
   });

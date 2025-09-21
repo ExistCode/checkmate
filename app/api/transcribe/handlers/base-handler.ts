@@ -155,14 +155,15 @@ export abstract class BaseHandler {
       if (factCheck && (factCheck.explanation || factCheck.content)) {
         try {
           // Import and call the origin tracing logic directly
-          const { parseOriginTracing, computeCredibilityFromUrl } = await import('@/lib/analysis/parseOriginTracing');
-          const { generateText } = await import('ai');
-          const { textModel } = await import('@/lib/ai');
-          
-          const content = factCheck.explanation || factCheck.content || '';
+          const { parseOriginTracing, computeCredibilityFromUrl } =
+            await import("@/lib/analysis/parseOriginTracing");
+          const { generateText } = await import("ai");
+          const { textModel } = await import("@/lib/ai");
+
+          const content = factCheck.explanation || factCheck.content || "";
           const parsed = parseOriginTracing(content);
 
-          // AI enhancement for richer data  
+          // AI enhancement for richer data
           const prompt = `You are an origin-tracing and misinformation analysis assistant.
 
 Task: Read the following analysis text and produce a compact JSON with:
@@ -189,21 +190,25 @@ Return ONLY valid JSON.`;
           try {
             const { text } = await generateText({
               model: textModel(),
-              system: 'Extract structured origin-tracing data for visualization. Be precise and grounded in the text.',
+              system:
+                "Extract structured origin-tracing data for visualization. Be precise and grounded in the text.",
               prompt,
               maxTokens: Math.max(2000, 4000),
               temperature: 0.1,
             });
-            const start = text.indexOf('{');
-            const end = text.lastIndexOf('}');
+            const start = text.indexOf("{");
+            const end = text.lastIndexOf("}");
             if (start !== -1 && end !== -1) {
               ai = JSON.parse(text.slice(start, end + 1));
             }
           } catch {}
 
           // Merge AI and parsed data like in the API route
-          const aiOT: any = (ai ?? {});
-          const uniqBy = <T, K extends string | number>(items: T[], keyFn: (t: T) => K) => {
+          const aiOT: any = ai ?? {};
+          const uniqBy = <T, K extends string | number>(
+            items: T[],
+            keyFn: (t: T) => K
+          ) => {
             const map = new Map<K, T>();
             for (const it of items) {
               const k = keyFn(it);
@@ -214,68 +219,109 @@ Return ONLY valid JSON.`;
 
           const firstSeenDatesMerged = uniqBy(
             [
-              ...((aiOT.originTracing?.firstSeenDates || []) as Array<{ source: string; date?: string; url?: string }>),
-              ...((parsed.originTracing.firstSeenDates || []) as Array<{ source: string; date?: string; url?: string }>),
+              ...((aiOT.originTracing?.firstSeenDates || []) as Array<{
+                source: string;
+                date?: string;
+                url?: string;
+              }>),
+              ...((parsed.originTracing.firstSeenDates || []) as Array<{
+                source: string;
+                date?: string;
+                url?: string;
+              }>),
             ],
-            (d) => `${(d.source || '').toLowerCase()}|${d.date || ''}|${d.url || ''}`
+            (d) =>
+              `${(d.source || "").toLowerCase()}|${d.date || ""}|${d.url || ""}`
           ).slice(0, 15);
 
           const evolutionStepsMerged = [
-            ...((aiOT.originTracing?.evolutionSteps || []) as Array<{platform: string, transformation: string, impact?: string, date?: string}>),
-            ...((parsed.originTracing.propagationPaths || []).map((path: string) => ({ platform: path, transformation: `Content spread through ${path}` })) as Array<{platform: string, transformation: string}>),
+            ...((aiOT.originTracing?.evolutionSteps || []) as Array<{
+              platform: string;
+              transformation: string;
+              impact?: string;
+              date?: string;
+            }>),
+            ...((parsed.originTracing.propagationPaths || []).map(
+              (path: string) => ({
+                platform: path,
+                transformation: `Content spread through ${path}`,
+              })
+            ) as Array<{ platform: string; transformation: string }>),
           ].slice(0, 10);
-          
+
           const propagationPathsMerged = Array.from(
-            new Set<string>([
-              ...((aiOT.originTracing?.propagationPaths || []) as string[]),
-              ...((parsed.originTracing.propagationPaths || []) as string[]),
-            ].map((s) => String(s)))
+            new Set<string>(
+              [
+                ...((aiOT.originTracing?.propagationPaths || []) as string[]),
+                ...((parsed.originTracing.propagationPaths || []) as string[]),
+              ].map((s) => String(s))
+            )
           ).slice(0, 15);
 
           // Extract all links
-          const extractAllLinks = (text: string): Array<{ url: string; title?: string }> => {
+          const extractAllLinks = (
+            text: string
+          ): Array<{ url: string; title?: string }> => {
             const links: Array<{ url: string; title?: string }> = [];
             const md = /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g;
             let m: RegExpExecArray | null;
             while ((m = md.exec(text)) !== null) {
               links.push({ title: m[1], url: m[2] });
             }
-            const bare = /(https?:\/\/[\w\-._~:/?#[\]@!$&'()*+,;=%]+)(?![^\s]*\))/g;
+            const bare =
+              /(https?:\/\/[\w\-._~:/?#[\]@!$&'()*+,;=%]+)(?![^\s]*\))/g;
             let b: RegExpExecArray | null;
             while ((b = bare.exec(text)) !== null) {
               const url = b[1];
               if (!links.some((l) => l.url === url)) {
                 try {
                   const u = new URL(url);
-                  links.push({ url, title: u.hostname.replace(/^www\./, '') });
+                  links.push({ url, title: u.hostname.replace(/^www\./, "") });
                 } catch {}
               }
             }
             const seen = new Set<string>();
-            return links.filter((l) => (seen.has(l.url) ? false : (seen.add(l.url), true)));
+            return links.filter((l) =>
+              seen.has(l.url) ? false : (seen.add(l.url), true)
+            );
           };
 
           originTracingData = {
             originTracing: {
-              hypothesizedOrigin: aiOT.originTracing?.hypothesizedOrigin ?? parsed.originTracing.hypothesizedOrigin ?? undefined,
-              firstSeenDates: firstSeenDatesMerged.length ? firstSeenDatesMerged : undefined,
-              evolutionSteps: evolutionStepsMerged.length ? evolutionStepsMerged : undefined,
-              propagationPaths: propagationPathsMerged.length ? propagationPathsMerged : undefined,
+              hypothesizedOrigin:
+                aiOT.originTracing?.hypothesizedOrigin ??
+                parsed.originTracing.hypothesizedOrigin ??
+                undefined,
+              firstSeenDates: firstSeenDatesMerged.length
+                ? firstSeenDatesMerged
+                : undefined,
+              evolutionSteps: evolutionStepsMerged.length
+                ? evolutionStepsMerged
+                : undefined,
+              propagationPaths: propagationPathsMerged.length
+                ? propagationPathsMerged
+                : undefined,
             },
-            beliefDrivers: Array.isArray(aiOT.beliefDrivers) && aiOT.beliefDrivers.length
-              ? aiOT.beliefDrivers.slice(0, 10)
-              : parsed.beliefDrivers.slice(0, 10),
-            sources: Array.isArray(aiOT.sources) && aiOT.sources.length
-              ? aiOT.sources.map((s: any) => ({
-                  url: String(s.url || ''),
-                  title: String(s.title || s.url || 'Source'),
-                  source: String(s.source || ''),
-                  credibility: s.url ? computeCredibilityFromUrl(String(s.url)) : 60,
-                })).slice(0, 15)
-              : parsed.sources.slice(0, 15),
+            beliefDrivers:
+              Array.isArray(aiOT.beliefDrivers) && aiOT.beliefDrivers.length
+                ? aiOT.beliefDrivers.slice(0, 10)
+                : parsed.beliefDrivers.slice(0, 10),
+            sources:
+              Array.isArray(aiOT.sources) && aiOT.sources.length
+                ? aiOT.sources
+                    .map((s: any) => ({
+                      url: String(s.url || ""),
+                      title: String(s.title || s.url || "Source"),
+                      source: String(s.source || ""),
+                      credibility: s.url
+                        ? computeCredibilityFromUrl(String(s.url))
+                        : 60,
+                    }))
+                    .slice(0, 15)
+                : parsed.sources.slice(0, 15),
             verdict: aiOT.verdict ?? parsed.verdict,
             content,
-            claim: typeof aiOT.claim === 'string' ? aiOT.claim : undefined,
+            claim: typeof aiOT.claim === "string" ? aiOT.claim : undefined,
             allLinks: extractAllLinks(content).slice(0, 50),
           };
 
@@ -296,7 +342,7 @@ Return ONLY valid JSON.`;
             platform: this.platform,
             operation: "origin-tracing",
             metadata: {
-              error: error instanceof Error ? error.message : 'Unknown error',
+              error: error instanceof Error ? error.message : "Unknown error",
             },
           });
         }
